@@ -1,0 +1,46 @@
+package com.hospital.management.hospitalmanagementsystem.patient.mapper;
+
+import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRequestDTO;
+import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
+import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
+
+public class PatientMapper {
+
+    public static Patient toEntity(PatientRequestDTO dto) {
+        return Patient.builder()
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .age(dto.getAge())
+                .gender(dto.getGender())
+                .phone(dto.getPhone())
+                .email(dto.getEmail())
+                .address(dto.getAddress())
+                .bloodGroup(dto.getBloodGroup())
+                .disease(dto.getDisease())
+                .allergies(dto.getAllergies())
+                .emergencyContactName(dto.getEmergencyContactName())
+                .emergencyContactPhone(dto.getEmergencyContactPhone())
+                .build();
+    }
+
+    public static PatientResponseDTO toDTO(Patient patient) {
+        return PatientResponseDTO.builder()
+                .id(patient.getId())
+                .firstName(patient.getFirstName())
+                .lastName(patient.getLastName())
+                .fullName(patient.getFullName())
+                .age(patient.getAge())
+                .gender(patient.getGender())
+                .phone(patient.getPhone())
+                .email(patient.getEmail())
+                .address(patient.getAddress())
+                .bloodGroup(patient.getBloodGroup())
+                .disease(patient.getDisease())
+                .allergies(patient.getAllergies())
+                .emergencyContactName(patient.getEmergencyContactName())
+                .emergencyContactPhone(patient.getEmergencyContactPhone())
+                .createdAt(patient.getCreatedAt())
+                .build();
+    }
+
+}

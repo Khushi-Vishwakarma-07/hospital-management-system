@@ -1,0 +1,66 @@
+package com.hospital.management.hospitalmanagementsystem.patient.service;
+
+import com.hospital.management.hospitalmanagementsystem.common.execption.ResourceNotFoundException;
+import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRequestDTO;
+import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
+import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
+import com.hospital.management.hospitalmanagementsystem.patient.mapper.PatientMapper;
+import com.hospital.management.hospitalmanagementsystem.patient.repository.PatientRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class PatientServiceImpl implements PatientService {
+
+    private final PatientRepository repository;
+
+    @Override
+    public PatientResponseDTO createPatient(PatientRequestDTO dto) {
+        Patient patient = PatientMapper.toEntity(dto);
+        Patient saved = repository.save(patient);
+        return PatientMapper.toDTO(saved);
+    }
+
+    @Override
+    public PatientResponseDTO getPatientById(Long id) {
+        Patient patient = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+
+        return PatientMapper.toDTO(patient);
+    }
+
+    @Override
+    public List<PatientResponseDTO> getAllPatients() {
+        return repository.findAll()
+                .stream()
+                .map(PatientMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto) {
+
+        Patient patient = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+
+        // ❌ DON'T manually set fields (avoids mismatch issues)
+        Patient updatedPatient = PatientMapper.toEntity(dto);
+        updatedPatient.setId(patient.getId()); // important to keep same record
+        updatedPatient.setCreatedAt(patient.getCreatedAt()); // preserve audit field if needed
+
+        Patient saved = repository.save(updatedPatient);
+        return PatientMapper.toDTO(saved);
+    }
+
+    @Override
+    public void deletePatient(Long id) {
+        Patient patient = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+
+        repository.delete(patient);
+    }
+}
