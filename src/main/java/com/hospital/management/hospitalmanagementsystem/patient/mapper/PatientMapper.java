@@ -40,7 +40,26 @@ public class PatientMapper {
                 .emergencyContactName(patient.getEmergencyContactName())
                 .emergencyContactPhone(patient.getEmergencyContactPhone())
                 .createdAt(patient.getCreatedAt())
+                .updatedAt(patient.getUpdatedAt())
                 .build();
+    }
+
+    public static void updateEntity(
+            Patient patient,
+            PatientRequestDTO dto) {
+
+        patient.setFirstName(dto.getFirstName());
+        patient.setLastName(dto.getLastName());
+        patient.setAge(dto.getAge());
+        patient.setGender(dto.getGender());
+        patient.setPhone(dto.getPhone());
+        patient.setEmail(dto.getEmail());
+        patient.setAddress(dto.getAddress());
+        patient.setBloodGroup(dto.getBloodGroup());
+        patient.setDisease(dto.getDisease());
+        patient.setAllergies(dto.getAllergies());
+        patient.setEmergencyContactName(dto.getEmergencyContactName());
+        patient.setEmergencyContactPhone(dto.getEmergencyContactPhone());
     }
 
 }

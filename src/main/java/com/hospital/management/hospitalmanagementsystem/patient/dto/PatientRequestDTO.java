@@ -13,11 +13,19 @@ import lombok.*;
 public class PatientRequestDTO {
 
     @NotBlank(message = "First name is required")
-    @Size(max = 100)
+    @Size(max = 100, message = "First name cannot exceed 100 characters")
+    @Pattern(
+            regexp = "^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
+            message = "First name must contain only letters"
+    )
     private String firstName;
 
     @NotBlank(message = "Last name is required")
-    @Size(max = 100)
+    @Size(max = 100, message = "Last name cannot exceed 100 characters")
+    @Pattern(
+            regexp = "^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
+            message = "Last name must contain only letters"
+    )
     private String lastName;
 
     @NotNull(message = "Age is required")
@@ -49,7 +57,11 @@ public class PatientRequestDTO {
     private String allergies;
 
     @NotBlank(message = "Emergency contact name is required")
-    @Size(max = 100)
+    @Size(max = 100, message = "Emergency contact name cannot exceed 100 characters")
+    @Pattern(
+            regexp = "^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
+            message = "Emergency contact name must contain only letters"
+    )
     private String emergencyContactName;
 
     @NotBlank(message = "Emergency contact phone is required")

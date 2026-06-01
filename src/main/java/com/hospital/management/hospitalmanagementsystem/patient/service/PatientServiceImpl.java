@@ -1,6 +1,7 @@
 package com.hospital.management.hospitalmanagementsystem.patient.service;
 
-import com.hospital.management.hospitalmanagementsystem.common.execption.ResourceNotFoundException;
+import com.hospital.management.hospitalmanagementsystem.common.exception.DuplicateResourceException;
+import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
@@ -20,8 +21,25 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public PatientResponseDTO createPatient(PatientRequestDTO dto) {
+
+        if (repository.existsByPhone(dto.getPhone())) {
+            throw new DuplicateResourceException(
+                    "Phone number already exists"
+            );
+        }
+
+        if (dto.getEmail() != null
+                && repository.existsByEmail(dto.getEmail())) {
+
+            throw new DuplicateResourceException(
+                    "Email already exists"
+            );
+        }
+
         Patient patient = PatientMapper.toEntity(dto);
+
         Patient saved = repository.save(patient);
+
         return PatientMapper.toDTO(saved);
     }
 
@@ -42,18 +60,21 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
-    public PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto) {
+    public PatientResponseDTO updatePatient(
+            Long id,
+            PatientRequestDTO dto) {
 
         Patient patient = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Patient not found with id: " + id
+                        ));
 
-        // ❌ DON'T manually set fields (avoids mismatch issues)
-        Patient updatedPatient = PatientMapper.toEntity(dto);
-        updatedPatient.setId(patient.getId()); // important to keep same record
-        updatedPatient.setCreatedAt(patient.getCreatedAt()); // preserve audit field if needed
+        PatientMapper.updateEntity(patient, dto);
 
-        Patient saved = repository.save(updatedPatient);
-        return PatientMapper.toDTO(saved);
+        Patient updated = repository.save(patient);
+
+        return PatientMapper.toDTO(updated);
     }
 
     @Override
