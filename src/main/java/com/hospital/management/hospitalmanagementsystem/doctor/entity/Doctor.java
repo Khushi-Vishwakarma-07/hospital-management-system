@@ -1,0 +1,50 @@
+package com.hospital.management.hospitalmanagementsystem.doctor.entity;
+
+import com.hospital.management.hospitalmanagementsystem.common.base.BaseEntity;
+import com.hospital.management.hospitalmanagementsystem.doctor.enums.DoctorSpecialization;
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(
+        name = "doctors",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_doctor_phone", columnNames = "phone_number"),
+                @UniqueConstraint(name = "uk_doctor_email", columnNames = "email")
+        },
+        indexes = {
+                @Index(name = "idx_doctor_specialization",
+                        columnList = "specialization")
+        }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Doctor extends BaseEntity {
+
+    @Column(nullable = false, length = 100)
+    private String firstName;
+
+    @Column(nullable = false, length = 100)
+    private String lastName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50, nullable = false)
+    private DoctorSpecialization specialization;
+
+    @Column(name = "phone_number", nullable = false, length = 15)
+    private String phoneNumber;
+
+    @Column(nullable = false, length = 150)
+    private String email;
+
+    @Column(name = "experience_years", nullable = false)
+    private Integer experienceYears;
+
+    @Transient
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+}

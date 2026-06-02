@@ -4,7 +4,10 @@ import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientReque
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 
-public class PatientMapper {
+public final class PatientMapper {
+
+    private PatientMapper() {
+    }
 
     public static Patient toEntity(PatientRequestDTO dto) {
         return Patient.builder()
