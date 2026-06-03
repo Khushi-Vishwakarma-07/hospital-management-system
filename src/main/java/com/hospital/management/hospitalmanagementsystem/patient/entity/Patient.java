@@ -1,10 +1,14 @@
 package com.hospital.management.hospitalmanagementsystem.patient.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.hospital.management.hospitalmanagementsystem.appointment.entity.Appointment;
 import com.hospital.management.hospitalmanagementsystem.common.base.BaseEntity;
 import com.hospital.management.hospitalmanagementsystem.patient.enums.BloodGroup;
 import com.hospital.management.hospitalmanagementsystem.patient.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 
 @Entity
 @Table(
@@ -20,6 +24,10 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Patient extends BaseEntity {
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
+    private List<Appointment> appointments;
 
     @Column(nullable = false, length = 100)
     private String firstName;
