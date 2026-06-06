@@ -7,6 +7,7 @@ import com.hospital.management.hospitalmanagementsystem.doctor.enums.DoctorSpeci
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -31,6 +32,14 @@ public class Doctor extends BaseEntity {
     @JsonIgnore
     @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
     private List<Appointment> appointments;
+
+    @OneToMany(
+            mappedBy = "doctor",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private List<DoctorAvailability> availabilities = new ArrayList<>();
 
     @Column(nullable = false, length = 100)
     private String firstName;
