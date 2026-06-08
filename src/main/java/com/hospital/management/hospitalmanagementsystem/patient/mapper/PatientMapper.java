@@ -9,11 +9,12 @@ public final class PatientMapper {
     private PatientMapper() {
     }
 
+    // CREATE ENTITY
     public static Patient toEntity(PatientRequestDTO dto) {
         return Patient.builder()
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
-                .age(dto.getAge())
+                .dateOfBirth(dto.getDateOfBirth())
                 .gender(dto.getGender())
                 .phone(dto.getPhone())
                 .email(dto.getEmail())
@@ -26,13 +27,15 @@ public final class PatientMapper {
                 .build();
     }
 
+    // ENTITY → DTO
     public static PatientResponseDTO toDTO(Patient patient) {
+
         return PatientResponseDTO.builder()
                 .id(patient.getId())
                 .firstName(patient.getFirstName())
                 .lastName(patient.getLastName())
                 .fullName(patient.getFullName())
-                .age(patient.getAge())
+                .age(patient.getAge()) // derived
                 .gender(patient.getGender())
                 .phone(patient.getPhone())
                 .email(patient.getEmail())
@@ -47,13 +50,12 @@ public final class PatientMapper {
                 .build();
     }
 
-    public static void updateEntity(
-            Patient patient,
-            PatientRequestDTO dto) {
+    // UPDATE ENTITY
+    public static void updateEntity(Patient patient, PatientRequestDTO dto) {
 
         patient.setFirstName(dto.getFirstName());
         patient.setLastName(dto.getLastName());
-        patient.setAge(dto.getAge());
+        patient.setDateOfBirth(dto.getDateOfBirth());
         patient.setGender(dto.getGender());
         patient.setPhone(dto.getPhone());
         patient.setEmail(dto.getEmail());
@@ -64,5 +66,4 @@ public final class PatientMapper {
         patient.setEmergencyContactName(dto.getEmergencyContactName());
         patient.setEmergencyContactPhone(dto.getEmergencyContactPhone());
     }
-
 }

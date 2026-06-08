@@ -15,12 +15,6 @@ public interface DoctorAvailabilityRepository extends JpaRepository<DoctorAvaila
 
     List<DoctorAvailability> findByDoctor_IdAndDayOfWeek(Long doctorId, DayOfWeek dayOfWeek);
 
-    List<DoctorAvailability> findByDoctor_IdAndDayOfWeekAndIdNot(
-            Long doctorId,
-            DayOfWeek dayOfWeek,
-            Long id
-    );
-
     @Query("""
         SELECT a FROM DoctorAvailability a
         WHERE a.doctor.id = :doctorId

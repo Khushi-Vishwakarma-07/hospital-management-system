@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-//@EnableJpaAuditing
 @MappedSuperclass
 @Getter
 @Setter
@@ -33,21 +32,3 @@ public abstract class BaseEntity {
         this.updatedAt = LocalDateTime.now();
     }
 }
-
-
-//@MappedSuperclass
-//@EntityListeners(AuditingEntityListener.class)
-//@Getter
-//public abstract class BaseEntity {
-//
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    private Long id;
-//
-//    @CreatedDate
-//    @Column(updatable = false)
-//    private LocalDateTime createdAt;
-//
-//    @LastModifiedDate
-//    private LocalDateTime updatedAt;
-//}

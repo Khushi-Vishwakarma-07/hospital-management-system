@@ -4,6 +4,7 @@ import com.hospital.management.hospitalmanagementsystem.patient.enums.BloodGroup
 import com.hospital.management.hospitalmanagementsystem.patient.enums.Gender;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -19,8 +20,9 @@ public class PatientResponseDTO {
     private String lastName;
 
     private String fullName;
-
     private Integer age;
+
+    private LocalDate dateOfBirth;
 
     private Gender gender;
 

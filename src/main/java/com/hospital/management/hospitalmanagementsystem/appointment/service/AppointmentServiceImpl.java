@@ -6,8 +6,11 @@ import com.hospital.management.hospitalmanagementsystem.appointment.entity.Appoi
 import com.hospital.management.hospitalmanagementsystem.appointment.enums.AppointmentStatus;
 import com.hospital.management.hospitalmanagementsystem.appointment.mapper.AppointmentMapper;
 import com.hospital.management.hospitalmanagementsystem.appointment.repository.AppointmentRepository;
+import com.hospital.management.hospitalmanagementsystem.common.exception.BusinessException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
 import com.hospital.management.hospitalmanagementsystem.doctor.entity.Doctor;
+import com.hospital.management.hospitalmanagementsystem.doctor.entity.DoctorAvailability;
+import com.hospital.management.hospitalmanagementsystem.doctor.repository.DoctorAvailabilityRepository;
 import com.hospital.management.hospitalmanagementsystem.doctor.repository.DoctorRepository;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 import com.hospital.management.hospitalmanagementsystem.patient.repository.PatientRepository;
@@ -15,7 +18,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -25,26 +30,27 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
+    private final DoctorAvailabilityRepository availabilityRepository;
 
-    @Transactional
     @Override
-    public AppointmentResponseDTO createAppointment(AppointmentRequestDTO requestDTO) {
+    @Transactional
+    public AppointmentResponseDTO createAppointment(
+            AppointmentRequestDTO dto) {
 
-        Patient patient = patientRepository.findById(requestDTO.getPatientId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Patient not found with id: " + requestDTO.getPatientId()));
+        Patient patient = getPatient(dto.getPatientId());
+        Doctor doctor = getDoctor(dto.getDoctorId());
 
-        Doctor doctor = doctorRepository.findById(requestDTO.getDoctorId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Doctor not found with id: " + requestDTO.getDoctorId()));
+        validateAppointment(dto);
+        checkDoctorAvailability(dto);
+        checkOverlap(dto, null);
 
-        Appointment appointment = AppointmentMapper.toEntity(requestDTO, patient, doctor);
+        Appointment appointment =
+                AppointmentMapper.toEntity(dto, patient, doctor);
 
         appointment.setStatus(AppointmentStatus.SCHEDULED);
 
-        Appointment saved = appointmentRepository.save(appointment);
-
-        return AppointmentMapper.toDTO(saved);
+        return AppointmentMapper.toDTO(
+                appointmentRepository.save(appointment));
     }
 
     @Override
@@ -65,30 +71,32 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .toList();
     }
 
-    @Transactional
     @Override
-    public AppointmentResponseDTO updateAppointment(Long id, AppointmentRequestDTO requestDTO) {
+    @Transactional
+    public AppointmentResponseDTO updateAppointment(
+            Long id,
+            AppointmentRequestDTO dto) {
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Appointment not found with id: " + id));
+        Appointment appointment =
+                appointmentRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Appointment not found with id: " + id));
 
-        Patient patient = patientRepository.findById(requestDTO.getPatientId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Patient not found with id: " + requestDTO.getPatientId()));
+        Patient patient = getPatient(dto.getPatientId());
+        Doctor doctor = getDoctor(dto.getDoctorId());
 
-        Doctor doctor = doctorRepository.findById(requestDTO.getDoctorId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Doctor not found with id: " + requestDTO.getDoctorId()));
+        validateAppointment(dto);
+        checkDoctorAvailability(dto);
+        checkOverlap(dto, id);
 
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
 
-        AppointmentMapper.updateEntity(appointment, requestDTO);
+        AppointmentMapper.updateEntity(appointment, dto);
 
-        Appointment updated = appointmentRepository.save(appointment);
-
-        return AppointmentMapper.toDTO(updated);
+        return AppointmentMapper.toDTO(
+                appointmentRepository.save(appointment));
     }
 
     @Transactional
@@ -111,7 +119,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                     "Patient not found with id: " + patientId);
         }
 
-        return appointmentRepository.findAllByPatientId(patientId)
+        return appointmentRepository.findAllByPatient_Id(patientId)
                 .stream()
                 .map(AppointmentMapper::toDTO)
                 .toList();
@@ -125,7 +133,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                     "Doctor not found with id: " + doctorId);
         }
 
-        return appointmentRepository.findAllByDoctorId(doctorId)
+        return appointmentRepository.findAllByDoctor_Id(doctorId)
                 .stream()
                 .map(AppointmentMapper::toDTO)
                 .toList();
@@ -152,4 +160,107 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .map(AppointmentMapper::toDTO)
                 .toList();
     }
+
+
+    private void validateAppointment(AppointmentRequestDTO request) {
+
+        if (request.getAppointmentDateTime() == null) {
+            throw new BusinessException("Appointment time is required");
+        }
+
+        if (request.getDurationMinutes() == null ||
+                request.getDurationMinutes() <= 0) {
+            throw new BusinessException("Duration must be greater than 0");
+        }
+
+        if (request.getAppointmentDateTime().isBefore(LocalDateTime.now())) {
+            throw new BusinessException("Appointment cannot be scheduled in the past");
+        }
+    }
+
+    private Patient getPatient(Long patientId) {
+
+        return patientRepository.findById(patientId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Patient not found with id: " + patientId));
+    }
+
+    private Doctor getDoctor(Long doctorId) {
+
+        return doctorRepository.findById(doctorId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Doctor not found with id: " + doctorId));
+    }
+
+
+    private void checkDoctorAvailability(AppointmentRequestDTO requestDTO) {
+
+        LocalDateTime appointmentDateTime = requestDTO.getAppointmentDateTime();
+
+        DayOfWeek appointmentDay = appointmentDateTime.getDayOfWeek();
+        LocalTime appointmentStartTime = appointmentDateTime.toLocalTime();
+
+        LocalTime appointmentEndTime =
+                appointmentStartTime.plusMinutes(requestDTO.getDurationMinutes());
+
+        List<DoctorAvailability> availabilitySlots =
+                availabilityRepository
+                        .findByDoctor_IdAndDayOfWeek(
+                                requestDTO.getDoctorId(),
+                                appointmentDay
+                        );
+
+        if (availabilitySlots.isEmpty()) {
+            throw new BusinessException(
+                    "Doctor is not available on " + appointmentDay
+            );
+        }
+
+        boolean slotFound = availabilitySlots.stream()
+                .anyMatch(slot ->
+                        !appointmentStartTime.isBefore(slot.getStartTime())
+                                && !appointmentEndTime.isAfter(slot.getEndTime())
+                );
+
+        if (!slotFound) {
+            throw new BusinessException(
+                    "Requested time is outside doctor's availability"
+            );
+        }
+    }
+
+    private void checkOverlap(
+            AppointmentRequestDTO dto,
+            Long excludeId) {
+
+        LocalDateTime newStart = dto.getAppointmentDateTime();
+        LocalDateTime newEnd =
+                newStart.plusMinutes(dto.getDurationMinutes());
+
+        boolean overlapExists =
+                appointmentRepository.findAllByDoctor_Id(dto.getDoctorId())
+                        .stream()
+                        .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED)
+                        .filter(a -> !java.util.Objects.equals(a.getId(), excludeId))
+                        .anyMatch(a -> {
+
+                            LocalDateTime existingStart =
+                                    a.getAppointmentDateTime();
+
+                            LocalDateTime existingEnd =
+                                    existingStart.plusMinutes(
+                                            a.getDurationMinutes());
+
+                            return newStart.isBefore(existingEnd)
+                                    && newEnd.isAfter(existingStart);
+                        });
+
+        if (overlapExists) {
+            throw new BusinessException(
+                    "Doctor already has an appointment during this time");
+        }
+    }
+
 }

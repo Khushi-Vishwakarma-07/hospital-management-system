@@ -1,6 +1,5 @@
 package com.hospital.management.hospitalmanagementsystem.patient.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hospital.management.hospitalmanagementsystem.appointment.entity.Appointment;
 import com.hospital.management.hospitalmanagementsystem.common.base.BaseEntity;
 import com.hospital.management.hospitalmanagementsystem.patient.enums.BloodGroup;
@@ -8,6 +7,8 @@ import com.hospital.management.hospitalmanagementsystem.patient.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 
 @Entity
@@ -25,7 +26,6 @@ import java.util.List;
 @Builder
 public class Patient extends BaseEntity {
 
-    @JsonIgnore
     @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
     private List<Appointment> appointments;
 
@@ -36,7 +36,7 @@ public class Patient extends BaseEntity {
     private String lastName;
 
     @Column(nullable = false)
-    private Integer age;
+    private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
@@ -70,5 +70,11 @@ public class Patient extends BaseEntity {
     @Transient
     public String getFullName() {
         return firstName + " " + lastName;
+    }
+
+    @Transient
+    public Integer getAge() {
+        if (dateOfBirth == null) return null;
+        return Period.between(dateOfBirth, LocalDate.now()).getYears();
     }
 }

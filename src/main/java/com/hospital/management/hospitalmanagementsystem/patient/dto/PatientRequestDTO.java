@@ -5,6 +5,8 @@ import com.hospital.management.hospitalmanagementsystem.patient.enums.Gender;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,7 +15,7 @@ import lombok.*;
 public class PatientRequestDTO {
 
     @NotBlank(message = "First name is required")
-    @Size(max = 100, message = "First name cannot exceed 100 characters")
+    @Size(max = 100)
     @Pattern(
             regexp = "^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
             message = "First name must contain only letters"
@@ -21,17 +23,16 @@ public class PatientRequestDTO {
     private String firstName;
 
     @NotBlank(message = "Last name is required")
-    @Size(max = 100, message = "Last name cannot exceed 100 characters")
+    @Size(max = 100)
     @Pattern(
             regexp = "^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
             message = "Last name must contain only letters"
     )
     private String lastName;
 
-    @NotNull(message = "Age is required")
-    @Min(value = 0, message = "Age cannot be negative")
-    @Max(value = 130, message = "Invalid age")
-    private Integer age;
+    @NotNull(message = "Date of birth is required")
+    @Past(message = "Date of birth must be in the past")
+    private LocalDate dateOfBirth;
 
     @NotNull(message = "Gender is required")
     private Gender gender;
@@ -57,7 +58,7 @@ public class PatientRequestDTO {
     private String allergies;
 
     @NotBlank(message = "Emergency contact name is required")
-    @Size(max = 100, message = "Emergency contact name cannot exceed 100 characters")
+    @Size(max = 100)
     @Pattern(
             regexp = "^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
             message = "Emergency contact name must contain only letters"
@@ -65,6 +66,9 @@ public class PatientRequestDTO {
     private String emergencyContactName;
 
     @NotBlank(message = "Emergency contact phone is required")
-    @Pattern(regexp = "^(\\+91)?[6-9][0-9]{9}$", message = "Invalid Indian mobile number")
+    @Pattern(
+            regexp = "^(\\+91)?[6-9][0-9]{9}$",
+            message = "Invalid Indian mobile number"
+    )
     private String emergencyContactPhone;
 }

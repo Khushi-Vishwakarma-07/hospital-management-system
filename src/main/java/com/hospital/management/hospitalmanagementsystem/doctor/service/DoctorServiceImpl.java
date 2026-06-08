@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -79,58 +78,20 @@ public class DoctorServiceImpl implements DoctorService {
         repository.deleteById(id);
     }
 
-//    /**
-//     * Validates that email and phone number remain unique.
-//     *
-//     * CREATE (currentId == null):
-//     * ---------------------------
-//     * - If email already exists -> throw exception.
-//     * - If phone number already exists -> throw exception.
-//     *
-//     * UPDATE (currentId != null):
-//     * ---------------------------
-//     * 1. If email does not exist in database:
-//     *      -> safe to update.
-//     *
-//     * 2. If email exists and belongs to the same doctor:
-//     *      -> safe to update.
-//     *      Example:
-//     *      currentId = 2
-//     *      email belongs to doctor with id = 2
-//     *
-//     * 3. If email exists and belongs to another doctor:
-//     *      -> throw exception.
-//     *      Example:
-//     *      currentId = 1
-//     *      email belongs to doctor with id = 3
-//     *
-//     * Same logic applies to phone number.
-//     *
-//     * Purpose:
-//     * Prevent duplicate emails and phone numbers before saving,
-//     * while still allowing a doctor to keep their own existing
-//     * email/phone during updates.
-//     */
+    private void validateOwnership(Long currentId, Long existingId, String message) {
+        if (currentId == null || !currentId.equals(existingId)) {
+            throw new BusinessException(message);
+        }
+    }
 
     private void validateUniqueFields(String email, String phoneNumber, Long currentId) {
 
-        Doctor doctorWithEmail = repository.findByEmail(email).orElse(null);
+        repository.findByEmail(email).ifPresent(doctor ->
+                validateOwnership(currentId, doctor.getId(), "Email already exists")
+        );
 
-        if (doctorWithEmail != null &&
-                (currentId == null ||
-                        !doctorWithEmail.getId().equals(currentId))) {
-
-            throw new BusinessException("Email already exists");
-        }
-
-        Doctor doctorWithPhoneNumber =
-                repository.findByPhoneNumber(phoneNumber).orElse(null);
-
-        if (doctorWithPhoneNumber != null &&
-                (currentId == null ||
-                        !doctorWithPhoneNumber.getId().equals(currentId))) {
-
-            throw new BusinessException("Phone number already exists");
-        }
+        repository.findByPhoneNumber(phoneNumber).ifPresent(doctor ->
+                validateOwnership(currentId, doctor.getId(), "Phone number already exists")
+        );
     }
 }

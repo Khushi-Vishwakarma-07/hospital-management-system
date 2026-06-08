@@ -1,6 +1,5 @@
 package com.hospital.management.hospitalmanagementsystem.doctor.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hospital.management.hospitalmanagementsystem.appointment.entity.Appointment;
 import com.hospital.management.hospitalmanagementsystem.common.base.BaseEntity;
 import com.hospital.management.hospitalmanagementsystem.doctor.enums.DoctorSpecialization;
@@ -29,7 +28,6 @@ import java.util.List;
 @Builder
 public class Doctor extends BaseEntity {
 
-    @JsonIgnore
     @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
     private List<Appointment> appointments;
 

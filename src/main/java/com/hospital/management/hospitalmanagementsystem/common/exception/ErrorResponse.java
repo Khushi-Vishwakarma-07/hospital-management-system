@@ -3,22 +3,19 @@ package com.hospital.management.hospitalmanagementsystem.common.exception;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
 public class ErrorResponse {
 
-    private int status;
-    private String message;
-    private LocalDateTime timestamp;
+    private final int status;
 
-    private Map<String, String> errors;
+    private final String message;
+
+    private final LocalDateTime timestamp;
+
+    private final Map<String, String> errors;
 }
