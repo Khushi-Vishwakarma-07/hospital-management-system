@@ -22,19 +22,7 @@ public class PatientServiceImpl implements PatientService {
     @Override
     public PatientResponseDTO createPatient(PatientRequestDTO dto) {
 
-        if (repository.existsByPhone(dto.getPhone())) {
-            throw new DuplicateResourceException(
-                    "Phone number already exists"
-            );
-        }
-
-        if (dto.getEmail() != null
-                && repository.existsByEmail(dto.getEmail())) {
-
-            throw new DuplicateResourceException(
-                    "Email already exists"
-            );
-        }
+        validateUniqueFields(dto);
 
         Patient patient = PatientMapper.toEntity(dto);
 
@@ -45,14 +33,15 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public PatientResponseDTO getPatientById(Long id) {
-        Patient patient = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+
+        Patient patient = getPatientOrThrow(id);
 
         return PatientMapper.toDTO(patient);
     }
 
     @Override
     public List<PatientResponseDTO> getAllPatients() {
+
         return repository.findAll()
                 .stream()
                 .map(PatientMapper::toDTO)
@@ -60,15 +49,11 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
-    public PatientResponseDTO updatePatient(
-            Long id,
-            PatientRequestDTO dto) {
+    public PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto) {
 
-        Patient patient = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Patient not found with id: " + id
-                        ));
+        Patient patient = getPatientOrThrow(id);
+
+        validateUniqueFieldsForUpdate(patient, dto);
 
         PatientMapper.updateEntity(patient, dto);
 
@@ -79,9 +64,56 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public void deletePatient(Long id) {
-        Patient patient = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+
+        Patient patient = getPatientOrThrow(id);
 
         repository.delete(patient);
+    }
+
+    // PRIVATE HELPERS
+
+    private Patient getPatientOrThrow(Long id) {
+
+        return repository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Patient not found with id: " + id
+                        ));
+    }
+
+    private void validateUniqueFields(PatientRequestDTO dto) {
+
+        if (repository.existsByPhone(dto.getPhone())) {
+            throw new DuplicateResourceException(
+                    "Phone number already exists"
+            );
+        }
+
+        if (repository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateResourceException(
+                    "Email already exists"
+            );
+        }
+    }
+
+    private void validateUniqueFieldsForUpdate(
+            Patient patient,
+            PatientRequestDTO dto) {
+
+        if (!patient.getEmail().equals(dto.getEmail())
+                && repository.existsByEmail(dto.getEmail())) {
+
+            throw new DuplicateResourceException(
+                    "Email already exists"
+            );
+        }
+
+        if (!patient.getPhone().equals(dto.getPhone())
+                && repository.existsByPhone(dto.getPhone())) {
+
+            throw new DuplicateResourceException(
+                    "Phone number already exists"
+            );
+        }
     }
 }

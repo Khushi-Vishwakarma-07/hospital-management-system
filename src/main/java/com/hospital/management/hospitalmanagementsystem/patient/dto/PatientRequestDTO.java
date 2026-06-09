@@ -38,9 +38,10 @@ public class PatientRequestDTO {
     private Gender gender;
 
     @NotBlank(message = "Phone is required")
-    @Pattern(regexp = "^[0-9]{10,15}$", message = "Invalid phone number")
+    @Pattern(regexp = "^(\\+91)?[6-9][0-9]{9}$" , message = "Invalid phone number")
     private String phone;
 
+    @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     @Size(max = 150)
     private String email;

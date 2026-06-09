@@ -9,8 +9,9 @@ public final class PatientMapper {
     private PatientMapper() {
     }
 
-    // CREATE ENTITY
+    // DTO -> ENTITY
     public static Patient toEntity(PatientRequestDTO dto) {
+
         return Patient.builder()
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
@@ -27,30 +28,40 @@ public final class PatientMapper {
                 .build();
     }
 
-    // ENTITY → DTO
+    // ENTITY -> DTO
     public static PatientResponseDTO toDTO(Patient patient) {
 
         return PatientResponseDTO.builder()
                 .id(patient.getId())
+
                 .firstName(patient.getFirstName())
                 .lastName(patient.getLastName())
+
                 .fullName(patient.getFullName())
-                .age(patient.getAge()) // derived
+                .age(patient.getAge())
+
+                .dateOfBirth(patient.getDateOfBirth())
                 .gender(patient.getGender())
+
                 .phone(patient.getPhone())
                 .email(patient.getEmail())
                 .address(patient.getAddress())
+
                 .bloodGroup(patient.getBloodGroup())
+
                 .disease(patient.getDisease())
                 .allergies(patient.getAllergies())
+
                 .emergencyContactName(patient.getEmergencyContactName())
                 .emergencyContactPhone(patient.getEmergencyContactPhone())
+
                 .createdAt(patient.getCreatedAt())
                 .updatedAt(patient.getUpdatedAt())
+
                 .build();
     }
 
-    // UPDATE ENTITY
+    // UPDATE EXISTING ENTITY
     public static void updateEntity(Patient patient, PatientRequestDTO dto) {
 
         patient.setFirstName(dto.getFirstName());
