@@ -3,7 +3,6 @@ package com.hospital.management.hospitalmanagementsystem.appointment.mapper;
 import com.hospital.management.hospitalmanagementsystem.appointment.dto.AppointmentRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.appointment.dto.AppointmentResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.appointment.entity.Appointment;
-import com.hospital.management.hospitalmanagementsystem.appointment.enums.AppointmentStatus;
 import com.hospital.management.hospitalmanagementsystem.doctor.entity.Doctor;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 

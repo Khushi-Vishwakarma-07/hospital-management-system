@@ -7,6 +7,7 @@ import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRespo
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 import com.hospital.management.hospitalmanagementsystem.patient.mapper.PatientMapper;
 import com.hospital.management.hospitalmanagementsystem.patient.repository.PatientRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ public class PatientServiceImpl implements PatientService {
 
     private final PatientRepository repository;
 
+    @Transactional
     @Override
     public PatientResponseDTO createPatient(PatientRequestDTO dto) {
 
@@ -48,6 +50,7 @@ public class PatientServiceImpl implements PatientService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto) {
 
@@ -62,10 +65,17 @@ public class PatientServiceImpl implements PatientService {
         return PatientMapper.toDTO(updated);
     }
 
+    @Transactional
     @Override
     public void deletePatient(Long id) {
 
         Patient patient = getPatientOrThrow(id);
+
+        if (!patient.getAppointments().isEmpty()) {
+            throw new IllegalStateException(
+                    "Cannot delete patient with appointments"
+            );
+        }
 
         repository.delete(patient);
     }

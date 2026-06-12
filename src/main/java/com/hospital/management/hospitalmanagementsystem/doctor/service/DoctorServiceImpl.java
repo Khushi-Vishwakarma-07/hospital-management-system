@@ -35,11 +35,7 @@ public class DoctorServiceImpl implements DoctorService {
     @Transactional(readOnly = true)
     public DoctorResponseDTO getDoctorById(Long id) {
 
-        Doctor doctor = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Doctor not found with id: " + id));
-
-        return DoctorMapper.toDTO(doctor);
+        return DoctorMapper.toDTO(getDoctorOrThrow(id));
     }
 
     @Override
@@ -55,9 +51,7 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     public DoctorResponseDTO updateDoctor(Long id, DoctorRequestDTO dto) {
 
-        Doctor doctor = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Doctor not found with id: " + id));
+        Doctor doctor = getDoctorOrThrow(id);
 
         validateUniqueFields(dto.getEmail(), dto.getPhoneNumber(), id);
 
@@ -71,27 +65,46 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     public void deleteDoctor(Long id) {
 
-        if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException("Doctor not found with id: " + id);
-        }
+        Doctor doctor = getDoctorOrThrow(id);
 
-        repository.deleteById(id);
+        repository.delete(doctor);
     }
 
-    private void validateOwnership(Long currentId, Long existingId, String message) {
+    private Doctor getDoctorOrThrow(Long id) {
+
+        return repository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Doctor not found with id: " + id));
+    }
+
+    private void validateOwnership(Long currentId,
+                                   Long existingId,
+                                   String message) {
+
         if (currentId == null || !currentId.equals(existingId)) {
             throw new BusinessException(message);
         }
     }
 
-    private void validateUniqueFields(String email, String phoneNumber, Long currentId) {
+    private void validateUniqueFields(String email,
+                                      String phoneNumber,
+                                      Long currentId) {
 
         repository.findByEmail(email).ifPresent(doctor ->
-                validateOwnership(currentId, doctor.getId(), "Email already exists")
+                validateOwnership(
+                        currentId,
+                        doctor.getId(),
+                        "Email already exists"
+                )
         );
 
         repository.findByPhoneNumber(phoneNumber).ifPresent(doctor ->
-                validateOwnership(currentId, doctor.getId(), "Phone number already exists")
+                validateOwnership(
+                        currentId,
+                        doctor.getId(),
+                        "Phone number already exists"
+                )
         );
     }
 }

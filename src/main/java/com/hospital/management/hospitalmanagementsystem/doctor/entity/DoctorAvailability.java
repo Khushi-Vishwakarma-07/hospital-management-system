@@ -8,7 +8,15 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "doctor_availability")
+@Table(
+        name = "doctor_availability",
+        indexes = {
+                @Index(
+                        name = "idx_availability_doctor_day",
+                        columnList = "doctor_id, day_of_week"
+                )
+        }
+)
 @Getter
 @Setter
 @Builder

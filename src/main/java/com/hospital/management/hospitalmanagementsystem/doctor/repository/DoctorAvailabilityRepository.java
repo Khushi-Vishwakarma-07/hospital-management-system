@@ -11,21 +11,24 @@ import java.util.List;
 
 public interface DoctorAvailabilityRepository extends JpaRepository<DoctorAvailability, Long> {
 
-    List<DoctorAvailability> findByDoctor_IdOrderByDayOfWeekAsc(Long doctorId);
+    List<DoctorAvailability> findByDoctor_IdOrderByDayOfWeekAscStartTimeAsc(Long doctorId);
 
     List<DoctorAvailability> findByDoctor_IdAndDayOfWeek(Long doctorId, DayOfWeek dayOfWeek);
 
     @Query("""
-        SELECT a FROM DoctorAvailability a
-        WHERE a.doctor.id = :doctorId
-        AND a.dayOfWeek = :dayOfWeek
-        AND a.startTime < :endTime
-        AND a.endTime > :startTime
+    SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
+    FROM DoctorAvailability a
+    WHERE a.doctor.id = :doctorId
+    AND a.dayOfWeek = :dayOfWeek
+    AND a.startTime < :endTime
+    AND a.endTime > :startTime
+    AND (:excludeId IS NULL OR a.id <> :excludeId)
     """)
-    List<DoctorAvailability> findOverlappingSlots(
+    boolean existsOverlappingSlot(
             @Param("doctorId") Long doctorId,
             @Param("dayOfWeek") DayOfWeek dayOfWeek,
             @Param("startTime") LocalTime startTime,
-            @Param("endTime") LocalTime endTime
+            @Param("endTime") LocalTime endTime,
+            @Param("excludeId") Long excludeId
     );
 }

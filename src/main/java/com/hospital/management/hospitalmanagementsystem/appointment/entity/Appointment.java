@@ -13,27 +13,30 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Builder
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
 @Table(
         name = "appointments",
         indexes = {
-                @Index(name = "idx_appointment_date", columnList = "appointmentDateTime"),
-                @Index(name = "idx_appointment_status", columnList = "status")
+                @Index(name = "idx_appointment_datetime", columnList = "appointmentDateTime"),
+                @Index(name = "idx_appointment_status", columnList = "status"),
+                @Index(name = "idx_doctor_datetime", columnList = "doctor_id, appointmentDateTime"),
+                @Index(name = "idx_patient_datetime", columnList = "patient_id, appointmentDateTime")
         }
 )
 public class Appointment extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private AppointmentType type;
 
     @Column(nullable = false)
@@ -54,5 +57,6 @@ public class Appointment extends BaseEntity {
 
     private String roomNumber;
 
+    @Column(nullable = false)
     private boolean followUpRequired;
 }

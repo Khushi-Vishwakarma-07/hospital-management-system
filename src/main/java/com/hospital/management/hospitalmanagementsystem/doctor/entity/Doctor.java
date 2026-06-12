@@ -17,8 +17,7 @@ import java.util.List;
                 @UniqueConstraint(name = "uk_doctor_email", columnNames = "email")
         },
         indexes = {
-                @Index(name = "idx_doctor_specialization",
-                        columnList = "specialization")
+                @Index(name = "idx_doctor_specialization", columnList = "specialization"),
         }
 )
 @Getter
@@ -28,9 +27,11 @@ import java.util.List;
 @Builder
 public class Doctor extends BaseEntity {
 
+    @Builder.Default
     @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
-    private List<Appointment> appointments;
+    private List<Appointment> appointments = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(
             mappedBy = "doctor",
             cascade = CascadeType.ALL,

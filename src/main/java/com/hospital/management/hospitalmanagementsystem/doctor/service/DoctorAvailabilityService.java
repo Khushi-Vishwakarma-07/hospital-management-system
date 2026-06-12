@@ -11,7 +11,7 @@ public interface DoctorAvailabilityService {
 
     AvailabilityResponseDTO getAvailabilityById(Long id);
 
-    List<AvailabilityResponseDTO> getDoctorAvailability(Long doctorId);
+    List<AvailabilityResponseDTO> getDoctorAvailabilities(Long doctorId);
 
     AvailabilityResponseDTO updateAvailability(Long id, AvailabilityRequestDTO request);
 

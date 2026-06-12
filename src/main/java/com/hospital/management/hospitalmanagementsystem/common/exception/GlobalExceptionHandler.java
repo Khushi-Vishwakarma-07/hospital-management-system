@@ -1,5 +1,6 @@
 package com.hospital.management.hospitalmanagementsystem.common.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -18,11 +20,12 @@ public class GlobalExceptionHandler {
             HttpStatus status,
             String message) {
 
-        return ErrorResponse.builder()
-                .status(status.value())
-                .message(message)
-                .timestamp(LocalDateTime.now())
-                .build();
+        return new ErrorResponse(
+                status.value(),
+                message,
+                LocalDateTime.now(),
+                null
+        );
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -32,7 +35,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(buildError(
                         HttpStatus.NOT_FOUND,
-                        ex.getMessage()));
+                        ex.getMessage()
+                ));
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
@@ -42,21 +46,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(buildError(
                         HttpStatus.CONFLICT,
-                        ex.getMessage()));
+                        ex.getMessage()
+                ));
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(
+    public ResponseEntity<ErrorResponse> handleBusinessException(
             BusinessException ex) {
 
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(buildError(
                         HttpStatus.BAD_REQUEST,
-                        ex.getMessage()));
+                        ex.getMessage()
+                ));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
+    public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException ex) {
 
         Map<String, String> errors = new LinkedHashMap<>();
@@ -66,39 +72,42 @@ public class GlobalExceptionHandler {
                 .forEach(error ->
                         errors.put(
                                 error.getField(),
-                                error.getDefaultMessage()));
+                                error.getDefaultMessage()
+                        ));
 
-        ErrorResponse response = ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .message("Validation failed")
-                .timestamp(LocalDateTime.now())
-                .errors(errors)
-                .build();
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation failed",
+                LocalDateTime.now(),
+                errors
+        );
 
         return ResponseEntity.badRequest()
                 .body(response);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleJsonParseError(
+    public ResponseEntity<ErrorResponse> handleJsonParseException(
             HttpMessageNotReadableException ex) {
 
         return ResponseEntity.badRequest()
                 .body(buildError(
                         HttpStatus.BAD_REQUEST,
-                        "Invalid JSON request format"));
+                        "Invalid request body"
+                ));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex) {
 
-        ex.printStackTrace();
+        log.error("Unexpected exception occurred", ex);
 
         return ResponseEntity.status(
                         HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildError(
                         HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Something went wrong"));
+                        "An unexpected error occurred"
+                ));
     }
 }

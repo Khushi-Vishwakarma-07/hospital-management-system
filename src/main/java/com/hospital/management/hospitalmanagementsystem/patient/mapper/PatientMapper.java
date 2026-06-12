@@ -4,6 +4,9 @@ import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientReque
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 
+import java.time.Period;
+import java.time.LocalDate;
+
 public final class PatientMapper {
 
     private PatientMapper() {
@@ -36,9 +39,9 @@ public final class PatientMapper {
 
                 .firstName(patient.getFirstName())
                 .lastName(patient.getLastName())
-
                 .fullName(patient.getFullName())
-                .age(patient.getAge())
+
+                .age(calculateAge(patient.getDateOfBirth()))
 
                 .dateOfBirth(patient.getDateOfBirth())
                 .gender(patient.getGender())
@@ -61,7 +64,7 @@ public final class PatientMapper {
                 .build();
     }
 
-    // UPDATE EXISTING ENTITY
+    // UPDATE ENTITY
     public static void updateEntity(Patient patient, PatientRequestDTO dto) {
 
         patient.setFirstName(dto.getFirstName());
@@ -76,5 +79,9 @@ public final class PatientMapper {
         patient.setAllergies(dto.getAllergies());
         patient.setEmergencyContactName(dto.getEmergencyContactName());
         patient.setEmergencyContactPhone(dto.getEmergencyContactPhone());
+    }
+
+    private static Integer calculateAge(LocalDate dob) {
+        return Period.between(dob, LocalDate.now()).getYears();
     }
 }

@@ -23,7 +23,6 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
     private final DoctorAvailabilityRepository repository;
     private final DoctorRepository doctorRepository;
 
-
     @Override
     public AvailabilityResponseDTO createAvailability(Long doctorId, AvailabilityRequestDTO dto) {
 
@@ -33,7 +32,6 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
 
         validateTime(dto);
         validateBusinessRules(dto);
-
         checkOverlap(dto, doctorId, null);
 
         DoctorAvailability availability = DoctorAvailabilityMapper.toEntity(dto);
@@ -55,13 +53,13 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<AvailabilityResponseDTO> getDoctorAvailability(Long doctorId) {
+    public List<AvailabilityResponseDTO> getDoctorAvailabilities(Long doctorId) {
 
         if (!doctorRepository.existsById(doctorId)) {
             throw new ResourceNotFoundException("Doctor not found with id: " + doctorId);
         }
 
-        return repository.findByDoctor_IdOrderByDayOfWeekAsc(doctorId)
+        return repository.findByDoctor_IdOrderByDayOfWeekAscStartTimeAsc(doctorId)
                 .stream()
                 .map(DoctorAvailabilityMapper::toDTO)
                 .toList();
@@ -76,7 +74,6 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
 
         validateTime(dto);
         validateBusinessRules(dto);
-
         checkOverlap(dto, availability.getDoctor().getId(), id);
 
         DoctorAvailabilityMapper.updateEntity(availability, dto);
@@ -94,11 +91,10 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
         repository.deleteById(id);
     }
 
+    // ------------------- VALIDATION -------------------
+
     private void validateTime(AvailabilityRequestDTO dto) {
 
-        if (dto.getStartTime() == null || dto.getEndTime() == null) {
-            throw new BusinessException("Start and end time cannot be null");
-        }
 
         if (dto.getStartTime().equals(dto.getEndTime())) {
             throw new BusinessException("Start time and end time cannot be same");
@@ -125,29 +121,23 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
         }
     }
 
-
     private void checkOverlap(AvailabilityRequestDTO dto,
                               Long doctorId,
                               Long excludeId) {
 
-        List<DoctorAvailability> overlapping =
-                repository.findOverlappingSlots(
+        boolean hasOverlap =
+                repository.existsOverlappingSlot(
                         doctorId,
                         dto.getDayOfWeek(),
                         dto.getStartTime(),
-                        dto.getEndTime()
+                        dto.getEndTime(),
+                        excludeId
                 );
 
-        if (excludeId != null) {
-            overlapping = overlapping.stream()
-                    .filter(a -> !a.getId().equals(excludeId))
-                    .toList();
-        }
-
-        if (!overlapping.isEmpty()) {
+        if (hasOverlap) {
             throw new BusinessException(
-                    "Doctor already has overlapping availability on " + dto.getDayOfWeek());
+                    "Doctor already has overlapping availability on " + dto.getDayOfWeek()
+            );
         }
     }
-
 }

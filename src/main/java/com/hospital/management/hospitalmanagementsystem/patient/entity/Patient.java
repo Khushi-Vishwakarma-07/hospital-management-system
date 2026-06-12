@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.Period;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -26,8 +26,9 @@ import java.util.List;
 @Builder
 public class Patient extends BaseEntity {
 
+    @Builder.Default
     @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
-    private List<Appointment> appointments;
+    private List<Appointment> appointments  = new ArrayList<>();
 
     @Column(nullable = false, length = 100)
     private String firstName;
@@ -70,11 +71,5 @@ public class Patient extends BaseEntity {
     @Transient
     public String getFullName() {
         return firstName + " " + lastName;
-    }
-
-    @Transient
-    public Integer getAge() {
-        if (dateOfBirth == null) return null;
-        return Period.between(dateOfBirth, LocalDate.now()).getYears();
     }
 }

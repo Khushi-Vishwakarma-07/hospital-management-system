@@ -34,7 +34,7 @@ public class DoctorAvailabilityController {
 
     @GetMapping("/doctor/{doctorId}")
     public ResponseEntity<List<AvailabilityResponseDTO>> getByDoctor(@PathVariable Long doctorId) {
-        return ResponseEntity.ok(service.getDoctorAvailability(doctorId));
+        return ResponseEntity.ok(service.getDoctorAvailabilities(doctorId));
     }
 
     @PutMapping("/{id}")
