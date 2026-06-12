@@ -2,6 +2,7 @@ package com.hospital.management.hospitalmanagementsystem.appointment.service;
 
 import com.hospital.management.hospitalmanagementsystem.appointment.dto.AppointmentRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.appointment.dto.AppointmentResponseDTO;
+import com.hospital.management.hospitalmanagementsystem.appointment.enums.AppointmentStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,4 +27,6 @@ public interface AppointmentService {
             LocalDateTime startDate,
             LocalDateTime endDate
     );
+
+    AppointmentResponseDTO updateStatus(Long appointmentId, AppointmentStatus status);
 }

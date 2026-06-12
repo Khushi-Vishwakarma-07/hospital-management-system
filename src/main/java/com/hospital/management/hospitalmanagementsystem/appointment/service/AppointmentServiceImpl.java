@@ -263,4 +263,45 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
     }
 
+    @Override
+    @Transactional
+    public AppointmentResponseDTO updateStatus(
+            Long appointmentId,
+            AppointmentStatus newStatus) {
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Appointment not found with id: " + appointmentId));
+
+        AppointmentStatus currentStatus = appointment.getStatus();
+
+        switch (currentStatus) {
+
+            case SCHEDULED -> {
+                if (newStatus != AppointmentStatus.CONFIRMED &&
+                        newStatus != AppointmentStatus.CANCELLED) {
+                    throw new BusinessException(
+                            "Invalid status transition");
+                }
+            }
+
+            case CONFIRMED -> {
+                if (newStatus != AppointmentStatus.COMPLETED &&
+                        newStatus != AppointmentStatus.CANCELLED &&
+                        newStatus != AppointmentStatus.NO_SHOW) {
+                    throw new BusinessException(
+                            "Invalid status transition");
+                }
+            }
+
+            case COMPLETED, CANCELLED, NO_SHOW ->
+                    throw new BusinessException(
+                            "Status cannot be changed");
+        }
+
+        appointment.setStatus(newStatus);
+
+        return AppointmentMapper.toDTO(
+                appointmentRepository.save(appointment));
+    }
 }

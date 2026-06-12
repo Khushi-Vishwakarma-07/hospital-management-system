@@ -2,6 +2,7 @@ package com.hospital.management.hospitalmanagementsystem.appointment.controller;
 
 import com.hospital.management.hospitalmanagementsystem.appointment.dto.AppointmentRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.appointment.dto.AppointmentResponseDTO;
+import com.hospital.management.hospitalmanagementsystem.appointment.enums.AppointmentStatus;
 import com.hospital.management.hospitalmanagementsystem.appointment.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -94,6 +95,16 @@ public class AppointmentController {
                         startDate,
                         endDate
                 )
+        );
+    }
+
+    @PatchMapping("/{appointmentId}/status")
+    public ResponseEntity<AppointmentResponseDTO> updateStatus(
+            @PathVariable Long appointmentId,
+            @RequestParam AppointmentStatus status) {
+
+        return ResponseEntity.ok(
+                appointmentService.updateStatus(appointmentId, status)
         );
     }
 }
