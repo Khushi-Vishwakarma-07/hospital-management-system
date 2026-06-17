@@ -1,5 +1,6 @@
 package com.hospital.management.hospitalmanagementsystem.patient.service;
 
+import com.hospital.management.hospitalmanagementsystem.common.exception.BusinessException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.DuplicateResourceException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRequestDTO;
@@ -33,6 +34,7 @@ public class PatientServiceImpl implements PatientService {
         return PatientMapper.toDTO(saved);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public PatientResponseDTO getPatientById(Long id) {
 
@@ -41,6 +43,7 @@ public class PatientServiceImpl implements PatientService {
         return PatientMapper.toDTO(patient);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<PatientResponseDTO> getAllPatients() {
 
@@ -60,9 +63,7 @@ public class PatientServiceImpl implements PatientService {
 
         PatientMapper.updateEntity(patient, dto);
 
-        Patient updated = repository.save(patient);
-
-        return PatientMapper.toDTO(updated);
+        return PatientMapper.toDTO(patient);
     }
 
     @Transactional
@@ -72,7 +73,7 @@ public class PatientServiceImpl implements PatientService {
         Patient patient = getPatientOrThrow(id);
 
         if (!patient.getAppointments().isEmpty()) {
-            throw new IllegalStateException(
+            throw new BusinessException(
                     "Cannot delete patient with appointments"
             );
         }
