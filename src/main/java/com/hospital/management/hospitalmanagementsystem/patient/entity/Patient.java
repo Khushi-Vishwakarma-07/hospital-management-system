@@ -28,7 +28,7 @@ public class Patient extends BaseEntity {
 
     @Builder.Default
     @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
-    private List<Appointment> appointments  = new ArrayList<>();
+    private List<Appointment> appointments = new ArrayList<>();
 
     @Column(nullable = false, length = 100)
     private String firstName;
@@ -53,7 +53,7 @@ public class Patient extends BaseEntity {
     private String address;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "blood_group", length = 20, nullable = false)
+    @Column(name = "blood_group", nullable = false, length = 20)
     private BloodGroup bloodGroup;
 
     @Column(length = 500)
@@ -62,10 +62,10 @@ public class Patient extends BaseEntity {
     @Column(length = 500)
     private String allergies;
 
-    @Column(name = "emergency_contact_name", length = 100, nullable = false)
+    @Column(name = "emergency_contact_name", nullable = false, length = 100)
     private String emergencyContactName;
 
-    @Column(name = "emergency_contact_phone", length = 15, nullable = false)
+    @Column(name = "emergency_contact_phone", nullable = false, length = 15)
     private String emergencyContactPhone;
 
     @Transient

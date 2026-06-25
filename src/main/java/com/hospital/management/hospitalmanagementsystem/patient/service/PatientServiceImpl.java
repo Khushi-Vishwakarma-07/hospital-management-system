@@ -1,5 +1,6 @@
 package com.hospital.management.hospitalmanagementsystem.patient.service;
 
+import com.hospital.management.hospitalmanagementsystem.appointment.repository.AppointmentRepository;
 import com.hospital.management.hospitalmanagementsystem.common.exception.BusinessException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.DuplicateResourceException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
@@ -8,123 +9,87 @@ import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRespo
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 import com.hospital.management.hospitalmanagementsystem.patient.mapper.PatientMapper;
 import com.hospital.management.hospitalmanagementsystem.patient.repository.PatientRepository;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class PatientServiceImpl implements PatientService {
 
     private final PatientRepository repository;
+    private final AppointmentRepository appointmentRepository;
 
     @Transactional
     @Override
     public PatientResponseDTO createPatient(PatientRequestDTO dto) {
-
-        validateUniqueFields(dto);
-
-        Patient patient = PatientMapper.toEntity(dto);
-
-        Patient saved = repository.save(patient);
-
-        return PatientMapper.toDTO(saved);
+        validateUniqueFields(dto.getEmail(), dto.getPhone());
+        return PatientMapper.toDTO(save(PatientMapper.toEntity(dto)));
     }
 
     @Transactional(readOnly = true)
     @Override
     public PatientResponseDTO getPatientById(Long id) {
-
-        Patient patient = getPatientOrThrow(id);
-
-        return PatientMapper.toDTO(patient);
+        return PatientMapper.toDTO(getPatientOrThrow(id));
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<PatientResponseDTO> getAllPatients() {
-
-        return repository.findAll()
-                .stream()
-                .map(PatientMapper::toDTO)
-                .collect(Collectors.toList());
+    public Page<PatientResponseDTO> getAllPatients(Pageable pageable) {
+        return repository.findAll(pageable).map(PatientMapper::toDTO);
     }
 
     @Transactional
     @Override
     public PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto) {
-
         Patient patient = getPatientOrThrow(id);
-
         validateUniqueFieldsForUpdate(patient, dto);
-
         PatientMapper.updateEntity(patient, dto);
-
-        return PatientMapper.toDTO(patient);
+        return PatientMapper.toDTO(save(patient));
     }
 
     @Transactional
     @Override
     public void deletePatient(Long id) {
-
-        Patient patient = getPatientOrThrow(id);
-
-        if (!patient.getAppointments().isEmpty()) {
-            throw new BusinessException(
-                    "Cannot delete patient with appointments"
-            );
+        if (!repository.existsById(id)) {
+            throw new ResourceNotFoundException("Patient not found with id: " + id);
         }
-
-        repository.delete(patient);
+        if (appointmentRepository.existsByPatientId(id)) {
+            throw new BusinessException("Cannot delete patient with existing appointments");
+        }
+        repository.deleteById(id);
     }
 
-    // PRIVATE HELPERS
+    // -------------------------------------------------------------------------
 
     private Patient getPatientOrThrow(Long id) {
-
         return repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Patient not found with id: " + id
-                        ));
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
     }
 
-    private void validateUniqueFields(PatientRequestDTO dto) {
-
-        if (repository.existsByPhone(dto.getPhone())) {
-            throw new DuplicateResourceException(
-                    "Phone number already exists"
-            );
-        }
-
-        if (repository.existsByEmail(dto.getEmail())) {
-            throw new DuplicateResourceException(
-                    "Email already exists"
-            );
+    /** Wraps save to catch any DB-level unique constraint that slips past the pre-checks. */
+    private Patient save(Patient patient) {
+        try {
+            return repository.save(patient);
+        } catch (DataIntegrityViolationException ex) {
+            throw new DuplicateResourceException("Email or phone already exists");
         }
     }
 
-    private void validateUniqueFieldsForUpdate(
-            Patient patient,
-            PatientRequestDTO dto) {
+    private void validateUniqueFields(String email, String phone) {
+        if (repository.existsByEmail(email)) throw new DuplicateResourceException("Email already exists: " + email);
+        if (repository.existsByPhone(phone)) throw new DuplicateResourceException("Phone already exists: " + phone);
+    }
 
-        if (!patient.getEmail().equals(dto.getEmail())
-                && repository.existsByEmail(dto.getEmail())) {
-
-            throw new DuplicateResourceException(
-                    "Email already exists"
-            );
+    private void validateUniqueFieldsForUpdate(Patient existing, PatientRequestDTO dto) {
+        if (!existing.getEmail().equals(dto.getEmail()) && repository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateResourceException("Email already exists: " + dto.getEmail());
         }
-
-        if (!patient.getPhone().equals(dto.getPhone())
-                && repository.existsByPhone(dto.getPhone())) {
-
-            throw new DuplicateResourceException(
-                    "Phone number already exists"
-            );
+        if (!existing.getPhone().equals(dto.getPhone()) && repository.existsByPhone(dto.getPhone())) {
+            throw new DuplicateResourceException("Phone already exists: " + dto.getPhone());
         }
     }
 }

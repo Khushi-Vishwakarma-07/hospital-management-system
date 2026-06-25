@@ -1,16 +1,38 @@
 package com.hospital.management.hospitalmanagementsystem.patient.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.hospital.management.hospitalmanagementsystem.common.exception.InvalidEnumValueException;
+
 public enum BloodGroup {
 
-    A_POSITIVE,
-    A_NEGATIVE,
+    A_POSITIVE("A+"),
+    A_NEGATIVE("A-"),
+    B_POSITIVE("B+"),
+    B_NEGATIVE("B-"),
+    AB_POSITIVE("AB+"),
+    AB_NEGATIVE("AB-"),
+    O_POSITIVE("O+"),
+    O_NEGATIVE("O-");
 
-    B_POSITIVE,
-    B_NEGATIVE,
+    private final String label;
 
-    AB_POSITIVE,
-    AB_NEGATIVE,
+    BloodGroup(String label) {
+        this.label = label;
+    }
 
-    O_POSITIVE,
-    O_NEGATIVE
+    @JsonValue
+    public String getLabel() {
+        return label;
+    }
+
+    @JsonCreator
+    public static BloodGroup fromValue(String value) {
+        if (value == null) throw new InvalidEnumValueException("bloodGroup", "null");
+
+        for (BloodGroup bg : values()) {
+            if (bg.label.equalsIgnoreCase(value) || bg.name().equalsIgnoreCase(value)) return bg;
+        }
+        throw new InvalidEnumValueException("bloodGroup", value);
+    }
 }

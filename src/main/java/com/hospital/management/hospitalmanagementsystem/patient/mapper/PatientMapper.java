@@ -4,17 +4,14 @@ import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientReque
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 
-import java.time.Period;
 import java.time.LocalDate;
+import java.time.Period;
 
 public final class PatientMapper {
 
-    private PatientMapper() {
-    }
+    private PatientMapper() {}
 
-    // DTO -> ENTITY
     public static Patient toEntity(PatientRequestDTO dto) {
-
         return Patient.builder()
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
@@ -31,42 +28,30 @@ public final class PatientMapper {
                 .build();
     }
 
-    // ENTITY -> DTO
     public static PatientResponseDTO toDTO(Patient patient) {
-
         return PatientResponseDTO.builder()
                 .id(patient.getId())
-
                 .firstName(patient.getFirstName())
                 .lastName(patient.getLastName())
                 .fullName(patient.getFullName())
-
-                .age(calculateAge(patient.getDateOfBirth()))
-
+                .age(Period.between(patient.getDateOfBirth(), LocalDate.now()).getYears())
                 .dateOfBirth(patient.getDateOfBirth())
                 .gender(patient.getGender())
-
                 .phone(patient.getPhone())
                 .email(patient.getEmail())
                 .address(patient.getAddress())
-
                 .bloodGroup(patient.getBloodGroup())
-
                 .disease(patient.getDisease())
                 .allergies(patient.getAllergies())
-
                 .emergencyContactName(patient.getEmergencyContactName())
                 .emergencyContactPhone(patient.getEmergencyContactPhone())
-
                 .createdAt(patient.getCreatedAt())
                 .updatedAt(patient.getUpdatedAt())
-
                 .build();
     }
 
-    // UPDATE ENTITY
+    /** Mutates the existing entity in place — avoids detaching and re-persisting on update. */
     public static void updateEntity(Patient patient, PatientRequestDTO dto) {
-
         patient.setFirstName(dto.getFirstName());
         patient.setLastName(dto.getLastName());
         patient.setDateOfBirth(dto.getDateOfBirth());
@@ -79,9 +64,5 @@ public final class PatientMapper {
         patient.setAllergies(dto.getAllergies());
         patient.setEmergencyContactName(dto.getEmergencyContactName());
         patient.setEmergencyContactPhone(dto.getEmergencyContactPhone());
-    }
-
-    private static Integer calculateAge(LocalDate dob) {
-        return Period.between(dob, LocalDate.now()).getYears();
     }
 }

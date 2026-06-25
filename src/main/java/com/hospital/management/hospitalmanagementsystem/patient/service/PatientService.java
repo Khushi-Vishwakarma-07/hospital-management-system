@@ -2,8 +2,8 @@ package com.hospital.management.hospitalmanagementsystem.patient.service;
 
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface PatientService {
 
@@ -11,7 +11,7 @@ public interface PatientService {
 
     PatientResponseDTO getPatientById(Long id);
 
-    List<PatientResponseDTO> getAllPatients();
+    Page<PatientResponseDTO> getAllPatients(Pageable pageable);
 
     PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto);
 
