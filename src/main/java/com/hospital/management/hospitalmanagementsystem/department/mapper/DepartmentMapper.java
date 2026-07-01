@@ -20,6 +20,8 @@ public final class DepartmentMapper {
                 .id(department.getId())
                 .name(department.getName())
                 .description(department.getDescription())
+                .createdAt(department.getCreatedAt())
+                .updatedAt(department.getUpdatedAt())
                 .build();
     }
 

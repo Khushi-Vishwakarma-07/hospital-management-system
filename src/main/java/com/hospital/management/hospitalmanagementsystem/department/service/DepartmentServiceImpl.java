@@ -1,5 +1,6 @@
 package com.hospital.management.hospitalmanagementsystem.department.service;
 
+import com.hospital.management.hospitalmanagementsystem.common.exception.BusinessException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.DuplicateResourceException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
 import com.hospital.management.hospitalmanagementsystem.department.dto.DepartmentRequestDTO;
@@ -7,6 +8,7 @@ import com.hospital.management.hospitalmanagementsystem.department.dto.Departmen
 import com.hospital.management.hospitalmanagementsystem.department.entity.Department;
 import com.hospital.management.hospitalmanagementsystem.department.mapper.DepartmentMapper;
 import com.hospital.management.hospitalmanagementsystem.department.repository.DepartmentRepository;
+import com.hospital.management.hospitalmanagementsystem.specialization.repository.SpecializationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -19,86 +21,79 @@ import org.springframework.transaction.annotation.Transactional;
 public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository repository;
+    private final SpecializationRepository specializationRepository;
 
     @Transactional
     @Override
     public DepartmentResponseDTO createDepartment(DepartmentRequestDTO dto) {
-        validateUniqueName(dto.getName(), null);
+
+        if (repository.existsByNameIgnoreCase(dto.getName())) {
+            throw new DuplicateResourceException(
+                    "A department with that name already exists"
+            );
+        }
 
         return DepartmentMapper.toDTO(
-                save(
-                        DepartmentMapper.toEntity(dto)
-                )
+                save(DepartmentMapper.toEntity(dto))
         );
     }
 
     @Transactional(readOnly = true)
     @Override
     public DepartmentResponseDTO getDepartmentById(Long id) {
-        return DepartmentMapper.toDTO(
-                getDepartmentOrThrow(id)
-        );
+        return DepartmentMapper.toDTO(getDepartmentOrThrow(id));
     }
 
     @Transactional(readOnly = true)
     @Override
     public Page<DepartmentResponseDTO> getAllDepartments(Pageable pageable) {
-        return repository.findAll(pageable)
-                .map(DepartmentMapper::toDTO);
+        return repository.findAll(pageable).map(DepartmentMapper::toDTO);
     }
 
     @Transactional
     @Override
-    public DepartmentResponseDTO updateDepartment(Long id,
-                                                  DepartmentRequestDTO dto) {
-
+    public DepartmentResponseDTO updateDepartment(Long id, DepartmentRequestDTO dto) {
         Department department = getDepartmentOrThrow(id);
 
-        validateUniqueName(dto.getName(), id);
+        if (repository.existsByNameIgnoreCaseAndIdNot(dto.getName(), id)) {
+            throw new DuplicateResourceException(
+                    "A department with that name already exists"
+            );
+        }
 
         DepartmentMapper.updateEntity(department, dto);
-
-        return DepartmentMapper.toDTO(
-                save(department)
-        );
+        return DepartmentMapper.toDTO(save(department));
     }
 
     @Transactional
     @Override
     public void deleteDepartment(Long id) {
         Department department = getDepartmentOrThrow(id);
+
+        if (specializationRepository.existsByDepartmentId(id)) {
+            throw new BusinessException(
+                    "Cannot delete department: it still has specializations assigned to it"
+            );
+        }
+
         repository.delete(department);
     }
 
-    // -------------------------------------------------------------------------
+    // ---------------- HELPERS ----------------
 
     private Department getDepartmentOrThrow(Long id) {
         return repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Department not found with id: " + id
-                        ));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Department not found"   // id omitted from message intentionally
+                ));
     }
 
     private Department save(Department department) {
         try {
-            return repository.save(department);
+            return repository.saveAndFlush(department);
         } catch (DataIntegrityViolationException ex) {
             throw new DuplicateResourceException(
-                    "Department already exists: " + department.getName()
-            );
-        }
-    }
-
-    private void validateUniqueName(String name, Long currentId) {
-
-        boolean exists = currentId == null
-                ? repository.existsByNameIgnoreCase(name)
-                : repository.existsByNameIgnoreCaseAndIdNot(name, currentId);
-
-        if (exists) {
-            throw new DuplicateResourceException(
-                    "Department already exists: " + name
+                    "A department with that name already exists"
             );
         }
     }
