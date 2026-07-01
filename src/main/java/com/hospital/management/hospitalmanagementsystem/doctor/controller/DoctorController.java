@@ -4,65 +4,59 @@ import com.hospital.management.hospitalmanagementsystem.doctor.dto.DoctorRequest
 import com.hospital.management.hospitalmanagementsystem.doctor.dto.DoctorResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.doctor.service.DoctorService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/doctors")
 @RequiredArgsConstructor
+@Validated
 public class DoctorController {
 
     private final DoctorService doctorService;
 
     @PostMapping
     public ResponseEntity<DoctorResponseDTO> create(
-            @Valid @RequestBody DoctorRequestDTO requestDTO) {
+            @Valid @RequestBody DoctorRequestDTO dto) {
 
-        DoctorResponseDTO responseDTO =
-                doctorService.createDoctor(requestDTO);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(responseDTO);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(doctorService.createDoctor(dto));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DoctorResponseDTO> getDoctor(
-            @PathVariable Long id) {
+    public ResponseEntity<DoctorResponseDTO> getById(
+            @PathVariable @Positive(message = "Doctor ID must be a positive number") Long id) {
 
-        return ResponseEntity.ok(
-                doctorService.getDoctorById(id)
-        );
+        return ResponseEntity.ok(doctorService.getDoctorById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<DoctorResponseDTO>> getAll() {
+    public ResponseEntity<Page<DoctorResponseDTO>> getAll(
+            @PageableDefault(size = 20, sort = "lastName") Pageable pageable) {
 
-        return ResponseEntity.ok(
-                doctorService.getAllDoctors()
-        );
+        return ResponseEntity.ok(doctorService.getAllDoctors(pageable));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DoctorResponseDTO> updateDoctor(
-            @PathVariable Long id,
-            @Valid @RequestBody DoctorRequestDTO requestDTO) {
+    public ResponseEntity<DoctorResponseDTO> update(
+            @PathVariable @Positive(message = "Doctor ID must be a positive number") Long id,
+            @Valid @RequestBody DoctorRequestDTO dto) {
 
-        return ResponseEntity.ok(
-                doctorService.updateDoctor(id, requestDTO)
-        );
+        return ResponseEntity.ok(doctorService.updateDoctor(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDoctor(
-            @PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @PathVariable @Positive(message = "Doctor ID must be a positive number") Long id) {
 
         doctorService.deleteDoctor(id);
-
         return ResponseEntity.noContent().build();
     }
 }

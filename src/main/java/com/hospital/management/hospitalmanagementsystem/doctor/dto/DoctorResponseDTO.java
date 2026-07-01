@@ -1,6 +1,5 @@
 package com.hospital.management.hospitalmanagementsystem.doctor.dto;
 
-import com.hospital.management.hospitalmanagementsystem.doctor.enums.DoctorSpecialization;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -20,7 +19,9 @@ public class DoctorResponseDTO {
 
     private String fullName;
 
-    private DoctorSpecialization specialization;
+    private Long specializationId;
+
+    private String specializationName;
 
     private String phoneNumber;
 

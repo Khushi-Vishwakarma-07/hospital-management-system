@@ -2,7 +2,8 @@ package com.hospital.management.hospitalmanagementsystem.doctor.entity;
 
 import com.hospital.management.hospitalmanagementsystem.appointment.entity.Appointment;
 import com.hospital.management.hospitalmanagementsystem.common.base.BaseEntity;
-import com.hospital.management.hospitalmanagementsystem.doctor.enums.DoctorSpecialization;
+import com.hospital.management.hospitalmanagementsystem.shedule.availability.entity.DoctorAvailability;
+import com.hospital.management.hospitalmanagementsystem.specialization.entity.Specialization;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,7 +18,7 @@ import java.util.List;
                 @UniqueConstraint(name = "uk_doctor_email", columnNames = "email")
         },
         indexes = {
-                @Index(name = "idx_doctor_specialization", columnList = "specialization"),
+                @Index(name = "idx_doctor_specialization", columnList = "specialization_id"),
         }
 )
 @Getter
@@ -40,15 +41,15 @@ public class Doctor extends BaseEntity {
     )
     private List<DoctorAvailability> availabilities = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "specialization_id", nullable = false)
+    private Specialization specialization;
+
     @Column(nullable = false, length = 100)
     private String firstName;
 
     @Column(nullable = false, length = 100)
     private String lastName;
-
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50, nullable = false)
-    private DoctorSpecialization specialization;
 
     @Column(name = "phone_number", nullable = false, length = 15)
     private String phoneNumber;

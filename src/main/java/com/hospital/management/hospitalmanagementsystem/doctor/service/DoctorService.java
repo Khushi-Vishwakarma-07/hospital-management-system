@@ -2,22 +2,18 @@ package com.hospital.management.hospitalmanagementsystem.doctor.service;
 
 import com.hospital.management.hospitalmanagementsystem.doctor.dto.DoctorRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.doctor.dto.DoctorResponseDTO;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface DoctorService {
 
-    DoctorResponseDTO createDoctor(
-            DoctorRequestDTO dto);
+    DoctorResponseDTO createDoctor(DoctorRequestDTO dto);
 
-    DoctorResponseDTO getDoctorById(
-            Long id);
+    DoctorResponseDTO getDoctorById(Long id);
 
-    List<DoctorResponseDTO> getAllDoctors();
+    Page<DoctorResponseDTO> getAllDoctors(Pageable pageable);
 
-    DoctorResponseDTO updateDoctor(
-            Long id,
-            DoctorRequestDTO dto);
+    DoctorResponseDTO updateDoctor(Long id, DoctorRequestDTO dto);
 
     void deleteDoctor(Long id);
 }
