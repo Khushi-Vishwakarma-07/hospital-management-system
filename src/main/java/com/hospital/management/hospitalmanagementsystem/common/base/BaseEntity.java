@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+
 @MappedSuperclass
 @Getter
 @Setter
@@ -15,9 +16,10 @@ public abstract class BaseEntity {
     @Column(updatable = false, nullable = false)
     private Long id;
 
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
     @PrePersist
