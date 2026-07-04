@@ -40,14 +40,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+
         Map<String, String> errors = new LinkedHashMap<>();
 
         ex.getBindingResult()
                 .getFieldErrors()
-                .forEach(error -> errors.put(
-                        error.getField(),
-                        error.getDefaultMessage()
-                ));
+                .forEach(error ->
+                        errors.put(error.getField(), error.getDefaultMessage()));
 
         return ResponseEntity.badRequest()
                 .body(buildValidationError(errors));
@@ -80,9 +79,7 @@ public class GlobalExceptionHandler {
                         errors.put(
                                 result.getMethodParameter().getParameterName(),
                                 error.getDefaultMessage()
-                        )
-                )
-        );
+                        )));
 
         return ResponseEntity.badRequest()
                 .body(buildValidationError(errors));
@@ -100,7 +97,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidJson(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ErrorResponse> handleInvalidJson(
+            HttpMessageNotReadableException ex) {
+
         return ResponseEntity.badRequest()
                 .body(buildError(
                         HttpStatus.BAD_REQUEST,
@@ -109,24 +108,29 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            DataIntegrityViolationException ex) {
+
         log.error("Database constraint violation", ex);
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(buildError(
                         HttpStatus.CONFLICT,
-                        extractConstraintMessage(ex)
+                        "Database constraint violation"
                 ));
     }
 
     @ExceptionHandler(InvalidEnumValueException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidEnum(InvalidEnumValueException ex) {
+    public ResponseEntity<ErrorResponse> handleInvalidEnum(
+            InvalidEnumValueException ex) {
+
         return ResponseEntity.badRequest()
                 .body(buildError(HttpStatus.BAD_REQUEST, ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+
         log.error("Unexpected error occurred", ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -154,21 +158,5 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 errors
         );
-    }
-
-    private String extractConstraintMessage(DataIntegrityViolationException ex) {
-        Throwable root = ex.getRootCause();
-
-        if (root == null || root.getMessage() == null) {
-            return "Database constraint violation";
-        }
-
-        String message = root.getMessage().toLowerCase();
-
-        if (message.contains("duplicate") || message.contains("unique")) {
-            return "Duplicate resource violation";
-        }
-
-        return "Database constraint violation";
     }
 }

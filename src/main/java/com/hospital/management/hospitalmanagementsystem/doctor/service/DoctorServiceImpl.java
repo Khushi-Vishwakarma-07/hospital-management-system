@@ -4,6 +4,7 @@ import com.hospital.management.hospitalmanagementsystem.appointment.repository.A
 import com.hospital.management.hospitalmanagementsystem.common.exception.BusinessException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.DuplicateResourceException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
+import com.hospital.management.hospitalmanagementsystem.common.util.ConstraintUtils;
 import com.hospital.management.hospitalmanagementsystem.doctor.dto.DoctorRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.doctor.dto.DoctorResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.doctor.entity.Doctor;
@@ -41,14 +42,12 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     @Transactional(readOnly = true)
     public DoctorResponseDTO getDoctorById(Long id) {
-
         return DoctorMapper.toDTO(getDoctorOrThrow(id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<DoctorResponseDTO> getAllDoctors(Pageable pageable) {
-
         return doctorRepository.findAll(pageable)
                 .map(DoctorMapper::toDTO);
     }
@@ -80,7 +79,7 @@ public class DoctorServiceImpl implements DoctorService {
         doctorRepository.delete(doctor);
     }
 
-    // ================= PRIVATE METHODS  =================
+    // ================= PRIVATE METHODS =================
 
     private Doctor getDoctorOrThrow(Long id) {
 
@@ -88,8 +87,7 @@ public class DoctorServiceImpl implements DoctorService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Doctor not found with id: " + id
-                        )
-                );
+                        ));
     }
 
     private Specialization getSpecializationOrThrow(Long id) {
@@ -98,18 +96,31 @@ public class DoctorServiceImpl implements DoctorService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Specialization not found with id: " + id
-                        )
-                );
+                        ));
     }
 
     private Doctor save(Doctor doctor) {
 
         try {
             return doctorRepository.saveAndFlush(doctor);
+
         } catch (DataIntegrityViolationException ex) {
-            throw new DuplicateResourceException(
-                    "A doctor with that email or phone number already exists"
-            );
+
+            String constraintName = ConstraintUtils.getConstraintName(ex);
+
+            if ("uk_doctor_phone".equals(constraintName)) {
+                throw new DuplicateResourceException(
+                        "A doctor with that phone number already exists"
+                );
+            }
+
+            if ("uk_doctor_email".equals(constraintName)) {
+                throw new DuplicateResourceException(
+                        "A doctor with that email already exists"
+                );
+            }
+
+            throw ex;
         }
     }
 }

@@ -1,11 +1,15 @@
 package com.hospital.management.hospitalmanagementsystem.doctor.repository;
 
 import com.hospital.management.hospitalmanagementsystem.doctor.entity.Doctor;
+import jakarta.persistence.LockModeType;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -23,4 +27,14 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     Page<Doctor> findAll(Pageable pageable);
 
     boolean existsBySpecializationId(Long id);
+
+    /**
+     * Acquires a pessimistic write lock on the doctor row.
+     * Used to serialize schedule modifications for a doctor and
+     * prevent concurrent availability updates from bypassing
+     * overlap validation.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT d FROM Doctor d WHERE d.id = :id")
+    Optional<Doctor> findByIdForUpdate(@Param("id") Long id);
 }
