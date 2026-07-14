@@ -53,7 +53,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Transactional
     @Override
     public DepartmentResponseDTO updateDepartment(Long id, DepartmentRequestDTO dto) {
-        Department department = getDepartmentOrThrow(id);
+
+        Department department = getDepartmentForUpdateOrThrow(id);
 
         if (repository.existsByNameIgnoreCaseAndIdNot(dto.getName(), id)) {
             throw new DuplicateResourceException(
@@ -68,7 +69,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Transactional
     @Override
     public void deleteDepartment(Long id) {
-        Department department = getDepartmentOrThrow(id);
+
+        Department department = getDepartmentForUpdateOrThrow(id);
 
         if (specializationRepository.existsByDepartmentId(id)) {
             throw new BusinessException(
@@ -85,6 +87,13 @@ public class DepartmentServiceImpl implements DepartmentService {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Department not found"   // id omitted from message intentionally
+                ));
+    }
+
+    private Department getDepartmentForUpdateOrThrow(Long id) {
+        return repository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Department not found"
                 ));
     }
 

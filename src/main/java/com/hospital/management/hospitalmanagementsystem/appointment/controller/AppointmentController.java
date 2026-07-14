@@ -5,17 +5,23 @@ import com.hospital.management.hospitalmanagementsystem.appointment.dto.Appointm
 import com.hospital.management.hospitalmanagementsystem.appointment.enums.AppointmentStatus;
 import com.hospital.management.hospitalmanagementsystem.appointment.service.AppointmentService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/appointments")
+@Validated
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -33,7 +39,7 @@ public class AppointmentController {
 
     @GetMapping("/{id}")
     public ResponseEntity<AppointmentResponseDTO> getAppointment(
-            @PathVariable Long id) {
+            @PathVariable @Positive Long id) {
 
         return ResponseEntity.ok(
                 appointmentService.getAppointmentById(id)
@@ -41,16 +47,18 @@ public class AppointmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AppointmentResponseDTO>> getAllAppointments() {
+    public ResponseEntity<Page<AppointmentResponseDTO>> getAllAppointments(
+            @PageableDefault(size = 20, sort = "appointmentDateTime", direction = Sort.Direction.DESC)
+            Pageable pageable) {
 
         return ResponseEntity.ok(
-                appointmentService.getAllAppointments()
+                appointmentService.getAllAppointments(pageable)
         );
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<AppointmentResponseDTO> updateAppointment(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody AppointmentRequestDTO requestDTO) {
 
         return ResponseEntity.ok(
@@ -60,7 +68,7 @@ public class AppointmentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAppointment(
-            @PathVariable Long id) {
+            @PathVariable @Positive Long id) {
 
         appointmentService.deleteAppointment(id);
 
@@ -68,43 +76,59 @@ public class AppointmentController {
     }
 
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByPatientId(
-            @PathVariable Long patientId) {
+    public ResponseEntity<Page<AppointmentResponseDTO>> getAppointmentsByPatientId(
+            @PathVariable @Positive Long patientId,
+            @PageableDefault(size = 20, sort = "appointmentDateTime", direction = Sort.Direction.DESC)
+            Pageable pageable) {
 
         return ResponseEntity.ok(
-                appointmentService.getAppointmentsByPatientId(patientId)
+                appointmentService.getAppointmentsByPatientId(
+                        patientId,
+                        pageable
+                )
         );
     }
 
     @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByDoctorId(
-            @PathVariable Long doctorId) {
+    public ResponseEntity<Page<AppointmentResponseDTO>> getAppointmentsByDoctorId(
+            @PathVariable @Positive Long doctorId,
+            @PageableDefault(size = 20, sort = "appointmentDateTime", direction = Sort.Direction.DESC)
+            Pageable pageable) {
 
         return ResponseEntity.ok(
-                appointmentService.getAppointmentsByDoctorId(doctorId)
+                appointmentService.getAppointmentsByDoctorId(
+                        doctorId,
+                        pageable
+                )
         );
     }
 
     @GetMapping("/date-range")
-    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByDateRange(
+    public ResponseEntity<Page<AppointmentResponseDTO>> getAppointmentsByDateRange(
             @RequestParam LocalDateTime startDate,
-            @RequestParam LocalDateTime endDate) {
+            @RequestParam LocalDateTime endDate,
+            @PageableDefault(size = 20, sort = "appointmentDateTime", direction = Sort.Direction.ASC)
+            Pageable pageable) {
 
         return ResponseEntity.ok(
                 appointmentService.getAppointmentsByDateRange(
                         startDate,
-                        endDate
+                        endDate,
+                        pageable
                 )
         );
     }
 
     @PatchMapping("/{appointmentId}/status")
     public ResponseEntity<AppointmentResponseDTO> updateStatus(
-            @PathVariable Long appointmentId,
+            @PathVariable @Positive Long appointmentId,
             @RequestParam AppointmentStatus status) {
 
         return ResponseEntity.ok(
-                appointmentService.updateStatus(appointmentId, status)
+                appointmentService.updateStatus(
+                        appointmentId,
+                        status
+                )
         );
     }
 }

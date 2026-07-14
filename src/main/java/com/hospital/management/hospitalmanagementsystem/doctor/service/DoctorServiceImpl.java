@@ -10,6 +10,7 @@ import com.hospital.management.hospitalmanagementsystem.doctor.dto.DoctorRespons
 import com.hospital.management.hospitalmanagementsystem.doctor.entity.Doctor;
 import com.hospital.management.hospitalmanagementsystem.doctor.mapper.DoctorMapper;
 import com.hospital.management.hospitalmanagementsystem.doctor.repository.DoctorRepository;
+import com.hospital.management.hospitalmanagementsystem.schedule.leave.repository.DoctorLeaveRepository;
 import com.hospital.management.hospitalmanagementsystem.specialization.entity.Specialization;
 import com.hospital.management.hospitalmanagementsystem.specialization.repository.SpecializationRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,12 +28,14 @@ public class DoctorServiceImpl implements DoctorService {
     private final DoctorRepository doctorRepository;
     private final SpecializationRepository specializationRepository;
     private final AppointmentRepository appointmentRepository;
+    private final DoctorLeaveRepository doctorLeaveRepository;
 
     @Override
     public DoctorResponseDTO createDoctor(DoctorRequestDTO dto) {
 
+        validateUniqueFields(dto.getEmail(), dto.getPhoneNumber());
         Specialization specialization =
-                getSpecializationOrThrow(dto.getSpecializationId());
+                getSpecializationForUpdateOrThrow(dto.getSpecializationId());
 
         Doctor doctor = DoctorMapper.toEntity(dto, specialization);
 
@@ -55,10 +58,16 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     public DoctorResponseDTO updateDoctor(Long id, DoctorRequestDTO dto) {
 
-        Doctor doctor = getDoctorOrThrow(id);
+        Doctor doctor = doctorRepository.findByIdForUpdate(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Doctor not found with id: " + id
+                        ));
+
+        validateUniqueFieldsForUpdate(doctor, dto);
 
         Specialization specialization =
-                getSpecializationOrThrow(dto.getSpecializationId());
+                getSpecializationForUpdateOrThrow(dto.getSpecializationId());
 
         DoctorMapper.updateEntity(doctor, dto, specialization);
 
@@ -68,11 +77,21 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     public void deleteDoctor(Long id) {
 
-        Doctor doctor = getDoctorOrThrow(id);
+        Doctor doctor = doctorRepository.findByIdForUpdate(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Doctor not found with id: " + id
+                        ));
 
         if (appointmentRepository.existsByDoctor_Id(id)) {
             throw new BusinessException(
                     "Cannot delete doctor with existing appointments"
+            );
+        }
+
+        if (doctorLeaveRepository.existsByDoctor_Id(id)) {
+            throw new BusinessException(
+                    "Cannot delete doctor with existing leave records"
             );
         }
 
@@ -90,9 +109,9 @@ public class DoctorServiceImpl implements DoctorService {
                         ));
     }
 
-    private Specialization getSpecializationOrThrow(Long id) {
+    private Specialization getSpecializationForUpdateOrThrow(Long id) {
 
-        return specializationRepository.findById(id)
+        return specializationRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Specialization not found with id: " + id
@@ -121,6 +140,29 @@ public class DoctorServiceImpl implements DoctorService {
             }
 
             throw ex;
+        }
+    }
+
+    private void validateUniqueFields(String email, String phone) {
+        if (doctorRepository.existsByEmail(email)) {
+            throw new DuplicateResourceException("Email already exists: " + email);
+        }
+
+        if (doctorRepository.existsByPhoneNumber(phone)) {
+            throw new DuplicateResourceException("Phone already exists: " + phone);
+        }
+    }
+
+    private void validateUniqueFieldsForUpdate(Doctor existing, DoctorRequestDTO dto) {
+
+        if (!existing.getEmail().equals(dto.getEmail())
+                && doctorRepository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateResourceException("Email already exists: " + dto.getEmail());
+        }
+
+        if (!existing.getPhoneNumber().equals(dto.getPhoneNumber())
+                && doctorRepository.existsByPhoneNumber(dto.getPhoneNumber())) {
+            throw new DuplicateResourceException("Phone already exists: " + dto.getPhoneNumber());
         }
     }
 }

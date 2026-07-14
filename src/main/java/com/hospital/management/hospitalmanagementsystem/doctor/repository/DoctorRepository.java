@@ -18,6 +18,10 @@ import java.util.Optional;
 @NullMarked
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    boolean existsByEmail(String email);
+
     @Override
     @EntityGraph(attributePaths = "specialization")
     Optional<Doctor> findById(Long id);
@@ -26,15 +30,10 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     @EntityGraph(attributePaths = "specialization")
     Page<Doctor> findAll(Pageable pageable);
 
-    boolean existsBySpecializationId(Long id);
+    boolean existsBySpecialization_Id(Long id);
 
-    /**
-     * Acquires a pessimistic write lock on the doctor row.
-     * Used to serialize schedule modifications for a doctor and
-     * prevent concurrent availability updates from bypassing
-     * overlap validation.
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = "specialization")
     @Query("SELECT d FROM Doctor d WHERE d.id = :id")
     Optional<Doctor> findByIdForUpdate(@Param("id") Long id);
 }

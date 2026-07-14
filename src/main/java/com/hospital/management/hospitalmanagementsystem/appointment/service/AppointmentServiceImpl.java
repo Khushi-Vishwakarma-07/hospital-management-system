@@ -9,16 +9,20 @@ import com.hospital.management.hospitalmanagementsystem.appointment.repository.A
 import com.hospital.management.hospitalmanagementsystem.common.exception.BusinessException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
 import com.hospital.management.hospitalmanagementsystem.doctor.entity.Doctor;
-import com.hospital.management.hospitalmanagementsystem.doctor.entity.DoctorAvailability;
-import com.hospital.management.hospitalmanagementsystem.doctor.repository.DoctorAvailabilityRepository;
+import com.hospital.management.hospitalmanagementsystem.schedule.availability.repository.DoctorAvailabilityRepository;
+import com.hospital.management.hospitalmanagementsystem.schedule.leave.enums.LeaveStatus;
+import com.hospital.management.hospitalmanagementsystem.schedule.leave.repository.DoctorLeaveRepository;
 import com.hospital.management.hospitalmanagementsystem.doctor.repository.DoctorRepository;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 import com.hospital.management.hospitalmanagementsystem.patient.repository.PatientRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -27,10 +31,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AppointmentServiceImpl implements AppointmentService {
 
+    private static final long MAX_APPOINTMENT_DURATION_MINUTES = 120;
+
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final DoctorAvailabilityRepository availabilityRepository;
+    private final DoctorLeaveRepository doctorLeaveRepository;
 
     @Override
     @Transactional
@@ -38,11 +45,13 @@ public class AppointmentServiceImpl implements AppointmentService {
             AppointmentRequestDTO dto) {
 
         Patient patient = getPatient(dto.getPatientId());
-        Doctor doctor = getDoctor(dto.getDoctorId());
 
-        validateAppointment(dto);
-        checkDoctorAvailability(dto);
-        checkOverlap(dto, null);
+        Doctor doctor = doctorRepository.findByIdForUpdate(dto.getDoctorId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Doctor not found with id: " + dto.getDoctorId()));
+
+        validateScheduling(dto, null);
 
         Appointment appointment =
                 AppointmentMapper.toEntity(dto, patient, doctor);
@@ -53,6 +62,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 appointmentRepository.save(appointment));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public AppointmentResponseDTO getAppointmentById(Long id) {
 
@@ -63,12 +73,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         return AppointmentMapper.toDTO(appointment);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<AppointmentResponseDTO> getAllAppointments() {
-        return appointmentRepository.findAll()
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .toList();
+    public Page<AppointmentResponseDTO> getAllAppointments(
+            Pageable pageable) {
+
+        return appointmentRepository.findAll(pageable)
+                .map(AppointmentMapper::toDTO);
     }
 
     @Override
@@ -77,18 +88,17 @@ public class AppointmentServiceImpl implements AppointmentService {
             Long id,
             AppointmentRequestDTO dto) {
 
-        Appointment appointment =
-                appointmentRepository.findById(id)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Appointment not found with id: " + id));
+        Appointment appointment = getAppointmentForUpdate(id);
 
         Patient patient = getPatient(dto.getPatientId());
-        Doctor doctor = getDoctor(dto.getDoctorId());
 
-        validateAppointment(dto);
-        checkDoctorAvailability(dto);
-        checkOverlap(dto, id);
+        Doctor doctor = doctorRepository.findByIdForUpdate(dto.getDoctorId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Doctor not found with id: "
+                                        + dto.getDoctorId()));
+
+        validateScheduling(dto, id);
 
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
@@ -99,68 +109,105 @@ public class AppointmentServiceImpl implements AppointmentService {
                 appointmentRepository.save(appointment));
     }
 
-    @Transactional
     @Override
+    @Transactional
     public void deleteAppointment(Long id) {
 
-        if (!appointmentRepository.existsById(id)) {
-            throw new ResourceNotFoundException(
-                    "Appointment not found with id: " + id);
-        }
+        Appointment appointment = getAppointmentForUpdate(id);
 
-        appointmentRepository.deleteById(id);
+        appointmentRepository.delete(appointment);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<AppointmentResponseDTO> getAppointmentsByPatientId(Long patientId) {
+    public Page<AppointmentResponseDTO> getAppointmentsByPatientId(
+            Long patientId,
+            Pageable pageable) {
 
         if (!patientRepository.existsById(patientId)) {
             throw new ResourceNotFoundException(
                     "Patient not found with id: " + patientId);
         }
 
-        return appointmentRepository.findAllByPatient_Id(patientId)
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .toList();
+        return appointmentRepository
+                .findAllByPatient_Id(patientId, pageable)
+                .map(AppointmentMapper::toDTO);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<AppointmentResponseDTO> getAppointmentsByDoctorId(Long doctorId) {
+    public Page<AppointmentResponseDTO> getAppointmentsByDoctorId(
+            Long doctorId,
+            Pageable pageable) {
 
         if (!doctorRepository.existsById(doctorId)) {
             throw new ResourceNotFoundException(
                     "Doctor not found with id: " + doctorId);
         }
 
-        return appointmentRepository.findAllByDoctor_Id(doctorId)
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .toList();
+        return appointmentRepository
+                .findAllByDoctor_Id(doctorId, pageable)
+                .map(AppointmentMapper::toDTO);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<AppointmentResponseDTO> getAppointmentsByDateRange(
+    public Page<AppointmentResponseDTO> getAppointmentsByDateRange(
             LocalDateTime startDate,
-            LocalDateTime endDate) {
+            LocalDateTime endDate,
+            Pageable pageable) {
 
         if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException(
+            throw new BusinessException(
                     "Start date and end date must not be null");
         }
 
         if (startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException(
+            throw new BusinessException(
                     "Start date must be before end date");
         }
 
         return appointmentRepository
-                .findAllByAppointmentDateTimeBetween(startDate, endDate)
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .toList();
+                .findAllByAppointmentDateTimeBetween(
+                        startDate,
+                        endDate,
+                        pageable)
+                .map(AppointmentMapper::toDTO);
     }
 
+    @Override
+    @Transactional
+    public AppointmentResponseDTO updateStatus(
+            Long appointmentId,
+            AppointmentStatus newStatus) {
+
+        Appointment appointment = getAppointmentForUpdate(appointmentId);
+
+        if (!appointment.getStatus().canTransitionTo(newStatus)) {
+            throw new BusinessException(
+                    "Cannot transition appointment from "
+                            + appointment.getStatus()
+                            + " to "
+                            + newStatus);
+        }
+
+        appointment.setStatus(newStatus);
+
+        return AppointmentMapper.toDTO(
+                appointmentRepository.save(appointment));
+    }
+
+    // ================= PRIVATE METHODS =================
+
+    private void validateScheduling(
+            AppointmentRequestDTO dto,
+            Long excludeAppointmentId) {
+
+        validateAppointment(dto);
+        checkDoctorNotOnLeave(dto);
+        checkDoctorAvailability(dto);
+        checkOverlap(dto, excludeAppointmentId);
+    }
 
     private void validateAppointment(AppointmentRequestDTO request) {
 
@@ -168,13 +215,19 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new BusinessException("Appointment time is required");
         }
 
-        if (request.getDurationMinutes() == null ||
-                request.getDurationMinutes() <= 0) {
+        if (request.getDurationMinutes() == null
+                || request.getDurationMinutes() <= 0) {
             throw new BusinessException("Duration must be greater than 0");
         }
 
+        if (request.getDurationMinutes() > MAX_APPOINTMENT_DURATION_MINUTES) {
+            throw new BusinessException(
+                    "Appointment duration exceeds maximum allowed");
+        }
+
         if (request.getAppointmentDateTime().isBefore(LocalDateTime.now())) {
-            throw new BusinessException("Appointment cannot be scheduled in the past");
+            throw new BusinessException(
+                    "Appointment cannot be scheduled in the past");
         }
     }
 
@@ -186,49 +239,65 @@ public class AppointmentServiceImpl implements AppointmentService {
                                 "Patient not found with id: " + patientId));
     }
 
-    private Doctor getDoctor(Long doctorId) {
+    private void checkDoctorNotOnLeave(AppointmentRequestDTO requestDTO) {
 
-        return doctorRepository.findById(doctorId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Doctor not found with id: " + doctorId));
+        LocalDate appointmentDate =
+                requestDTO.getAppointmentDateTime().toLocalDate();
+
+        boolean onLeave = doctorLeaveRepository.existsOverlappingLeave(
+                requestDTO.getDoctorId(),
+                List.of(LeaveStatus.APPROVED),
+                appointmentDate,
+                appointmentDate,
+                null);
+
+        if (onLeave) {
+            throw new BusinessException(
+                    "Doctor is on approved leave on the requested date");
+        }
     }
 
+    private void checkDoctorAvailability(
+            AppointmentRequestDTO requestDTO) {
 
-    private void checkDoctorAvailability(AppointmentRequestDTO requestDTO) {
+        LocalDateTime appointmentDateTime =
+                requestDTO.getAppointmentDateTime();
 
-        LocalDateTime appointmentDateTime = requestDTO.getAppointmentDateTime();
+        DayOfWeek appointmentDay =
+                appointmentDateTime.getDayOfWeek();
 
-        DayOfWeek appointmentDay = appointmentDateTime.getDayOfWeek();
-        LocalTime appointmentStartTime = appointmentDateTime.toLocalTime();
+        LocalTime appointmentStartTime =
+                appointmentDateTime.toLocalTime();
 
         LocalTime appointmentEndTime =
-                appointmentStartTime.plusMinutes(requestDTO.getDurationMinutes());
+                appointmentStartTime.plusMinutes(
+                        requestDTO.getDurationMinutes());
 
-        List<DoctorAvailability> availabilitySlots =
-                availabilityRepository
-                        .findByDoctor_IdAndDayOfWeek(
-                                requestDTO.getDoctorId(),
-                                appointmentDay
-                        );
-
-        if (availabilitySlots.isEmpty()) {
+        if (!appointmentEndTime.isAfter(appointmentStartTime)) {
             throw new BusinessException(
-                    "Doctor is not available on " + appointmentDay
-            );
+                    "Appointment cannot span past midnight; "
+                            + "please split it into separate appointments");
         }
 
-        boolean slotFound = availabilitySlots.stream()
-                .anyMatch(slot ->
-                        !appointmentStartTime.isBefore(slot.getStartTime())
-                                && !appointmentEndTime.isAfter(slot.getEndTime())
-                );
+        boolean available =
+                availabilityRepository.existsAvailableSlot(
+                        requestDTO.getDoctorId(),
+                        appointmentDay,
+                        appointmentStartTime,
+                        appointmentEndTime);
 
-        if (!slotFound) {
+        if (!available) {
             throw new BusinessException(
-                    "Requested time is outside doctor's availability"
-            );
+                    "Doctor is not available during the requested time");
         }
+    }
+
+    private Appointment getAppointmentForUpdate(Long id) {
+
+        return appointmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Appointment not found with id: " + id));
     }
 
     private void checkOverlap(
@@ -236,72 +305,29 @@ public class AppointmentServiceImpl implements AppointmentService {
             Long excludeId) {
 
         LocalDateTime newStart = dto.getAppointmentDateTime();
-        LocalDateTime newEnd =
-                newStart.plusMinutes(dto.getDurationMinutes());
+        LocalDateTime newEnd = newStart.plusMinutes(dto.getDurationMinutes());
 
-        boolean overlapExists =
-                appointmentRepository.findAllByDoctor_Id(dto.getDoctorId())
-                        .stream()
-                        .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED)
-                        .filter(a -> !java.util.Objects.equals(a.getId(), excludeId))
-                        .anyMatch(a -> {
+        LocalDateTime startWindow =
+                newStart.minusMinutes(MAX_APPOINTMENT_DURATION_MINUTES);
 
-                            LocalDateTime existingStart =
-                                    a.getAppointmentDateTime();
+        boolean overlaps = appointmentRepository
+                .findPotentialOverlappingAppointments(
+                        dto.getDoctorId(),
+                        startWindow,
+                        newEnd,
+                        excludeId)
+                .stream()
+                .anyMatch(existing -> {
+                    LocalDateTime existingEnd =
+                            existing.getAppointmentDateTime()
+                                    .plusMinutes(existing.getDurationMinutes());
 
-                            LocalDateTime existingEnd =
-                                    existingStart.plusMinutes(
-                                            a.getDurationMinutes());
+                    return existingEnd.isAfter(newStart);
+                });
 
-                            return newStart.isBefore(existingEnd)
-                                    && newEnd.isAfter(existingStart);
-                        });
-
-        if (overlapExists) {
+        if (overlaps) {
             throw new BusinessException(
                     "Doctor already has an appointment during this time");
         }
-    }
-
-    @Override
-    @Transactional
-    public AppointmentResponseDTO updateStatus(
-            Long appointmentId,
-            AppointmentStatus newStatus) {
-
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Appointment not found with id: " + appointmentId));
-
-        AppointmentStatus currentStatus = appointment.getStatus();
-
-        switch (currentStatus) {
-
-            case SCHEDULED -> {
-                if (newStatus != AppointmentStatus.CONFIRMED &&
-                        newStatus != AppointmentStatus.CANCELLED) {
-                    throw new BusinessException(
-                            "Invalid status transition");
-                }
-            }
-
-            case CONFIRMED -> {
-                if (newStatus != AppointmentStatus.COMPLETED &&
-                        newStatus != AppointmentStatus.CANCELLED &&
-                        newStatus != AppointmentStatus.NO_SHOW) {
-                    throw new BusinessException(
-                            "Invalid status transition");
-                }
-            }
-
-            case COMPLETED, CANCELLED, NO_SHOW ->
-                    throw new BusinessException(
-                            "Status cannot be changed");
-        }
-
-        appointment.setStatus(newStatus);
-
-        return AppointmentMapper.toDTO(
-                appointmentRepository.save(appointment));
     }
 }

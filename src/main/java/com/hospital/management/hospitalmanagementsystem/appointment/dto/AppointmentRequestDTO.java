@@ -4,6 +4,7 @@ import com.hospital.management.hospitalmanagementsystem.appointment.enums.Appoin
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,9 +16,11 @@ import java.time.LocalDateTime;
 public class AppointmentRequestDTO {
 
     @NotNull(message = "Patient ID is required")
+    @Positive(message = "Patient ID must be positive")
     private Long patientId;
 
     @NotNull(message = "Doctor ID is required")
+    @Positive(message = "Doctor ID must be positive")
     private Long doctorId;
 
     @NotNull(message = "Appointment type is required")

@@ -2,7 +2,7 @@ package com.hospital.management.hospitalmanagementsystem.doctor.entity;
 
 import com.hospital.management.hospitalmanagementsystem.appointment.entity.Appointment;
 import com.hospital.management.hospitalmanagementsystem.common.base.BaseEntity;
-import com.hospital.management.hospitalmanagementsystem.shedule.availability.entity.DoctorAvailability;
+import com.hospital.management.hospitalmanagementsystem.schedule.availability.entity.DoctorAvailability;
 import com.hospital.management.hospitalmanagementsystem.specialization.entity.Specialization;
 import jakarta.persistence.*;
 import lombok.*;

@@ -30,7 +30,7 @@ public class SpecializationServiceImpl implements SpecializationService {
     @Override
     public SpecializationResponseDTO createSpecialization(SpecializationRequestDTO dto) {
 
-        Department department = getDepartmentOrThrow(dto.getDepartmentId());
+        Department department = getDepartmentForUpdateOrThrow(dto.getDepartmentId());
 
         if (repository.existsByNameIgnoreCaseAndDepartmentId(
                 dto.getSpecializationName(),
@@ -78,13 +78,12 @@ public class SpecializationServiceImpl implements SpecializationService {
             Long id,
             SpecializationRequestDTO dto) {
 
-        Specialization specialization =
-                getSpecializationWithDepartmentOrThrow(id);
+        Specialization specialization = getSpecializationForUpdateOrThrow(id);
 
         Department department =
                 specialization.getDepartment().getId().equals(dto.getDepartmentId())
                         ? specialization.getDepartment()
-                        : getDepartmentOrThrow(dto.getDepartmentId());
+                        : getDepartmentForUpdateOrThrow(dto.getDepartmentId());
 
         if (repository.existsByNameIgnoreCaseAndDepartmentIdAndIdNot(
                 dto.getSpecializationName(),
@@ -108,9 +107,10 @@ public class SpecializationServiceImpl implements SpecializationService {
     @Transactional
     @Override
     public void deleteSpecialization(Long id) {
-        Specialization specialization = getSpecializationWithDepartmentOrThrow(id);
 
-        if (doctorRepository.existsBySpecializationId(id)) {
+        Specialization specialization = getSpecializationForUpdateOrThrow(id);
+
+        if (doctorRepository.existsBySpecialization_Id(id)) {
             throw new BusinessException(
                     "Cannot delete specialization: it still has doctors assigned to it"
             );
@@ -121,8 +121,8 @@ public class SpecializationServiceImpl implements SpecializationService {
 
     // ---------------- HELPERS ----------------
 
-    private Department getDepartmentOrThrow(Long id) {
-        return departmentRepository.findById(id)
+    private Department getDepartmentForUpdateOrThrow(Long id) {
+        return departmentRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Department not found"
                 ));
@@ -136,6 +136,13 @@ public class SpecializationServiceImpl implements SpecializationService {
 
     private Specialization getSpecializationWithDepartmentOrThrow(Long id) {
         return repository.findWithDepartmentById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Specialization not found"
+                ));
+    }
+
+    private Specialization getSpecializationForUpdateOrThrow(Long id) {
+        return repository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Specialization not found"
                 ));

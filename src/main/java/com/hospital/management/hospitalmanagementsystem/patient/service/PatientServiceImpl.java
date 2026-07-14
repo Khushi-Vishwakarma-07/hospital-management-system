@@ -4,6 +4,7 @@ import com.hospital.management.hospitalmanagementsystem.appointment.repository.A
 import com.hospital.management.hospitalmanagementsystem.common.exception.BusinessException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.DuplicateResourceException;
 import com.hospital.management.hospitalmanagementsystem.common.exception.ResourceNotFoundException;
+import com.hospital.management.hospitalmanagementsystem.common.util.ConstraintUtils;
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientRequestDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.dto.PatientResponseDTO;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
@@ -45,7 +46,7 @@ public class PatientServiceImpl implements PatientService {
     @Transactional
     @Override
     public PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto) {
-        Patient patient = getPatientOrThrow(id);
+        Patient patient = getPatientForUpdateOrThrow(id);
         validateUniqueFieldsForUpdate(patient, dto);
         PatientMapper.updateEntity(patient, dto);
         return PatientMapper.toDTO(save(patient));
@@ -54,28 +55,51 @@ public class PatientServiceImpl implements PatientService {
     @Transactional
     @Override
     public void deletePatient(Long id) {
-        if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException("Patient not found with id: " + id);
+
+        Patient patient = getPatientForUpdateOrThrow(id);
+
+        if (appointmentRepository.existsByPatient_Id(id)) {
+            throw new BusinessException(
+                    "Cannot delete patient with existing appointments");
         }
-        if (appointmentRepository.existsByPatientId(id)) {
-            throw new BusinessException("Cannot delete patient with existing appointments");
-        }
-        repository.deleteById(id);
+
+        repository.delete(patient);
     }
 
-    // -------------------------------------------------------------------------
+    // ================= PRIVATE METHODS =================
 
     private Patient getPatientOrThrow(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
     }
 
-    /** Wraps save to catch any DB-level unique constraint that slips past the pre-checks. */
+    private Patient getPatientForUpdateOrThrow(Long id) {
+        return repository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+    }
+
     private Patient save(Patient patient) {
+
         try {
-            return repository.save(patient);
+            return repository.saveAndFlush(patient);
+
         } catch (DataIntegrityViolationException ex) {
-            throw new DuplicateResourceException("Email or phone already exists");
+
+            String constraintName = ConstraintUtils.getConstraintName(ex);
+
+            if ("uk_patient_phone".equals(constraintName)) {
+                throw new DuplicateResourceException(
+                        "A patient with that phone number already exists"
+                );
+            }
+
+            if ("uk_patient_email".equals(constraintName)) {
+                throw new DuplicateResourceException(
+                        "A patient with that email already exists"
+                );
+            }
+
+            throw ex;
         }
     }
 
