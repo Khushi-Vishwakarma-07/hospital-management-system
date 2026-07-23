@@ -17,6 +17,7 @@ import com.hospital.management.hospitalmanagementsystem.medicalrecord.mapper.Med
 import com.hospital.management.hospitalmanagementsystem.medicalrecord.repository.MedicalRecordRepository;
 import com.hospital.management.hospitalmanagementsystem.patient.entity.Patient;
 import com.hospital.management.hospitalmanagementsystem.patient.repository.PatientRepository;
+import com.hospital.management.hospitalmanagementsystem.prescription.repository.PrescriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;
+    private final PrescriptionRepository prescriptionRepository;
 
     @Transactional
     @Override
@@ -87,6 +89,13 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
     public void deleteMedicalRecord(Long id) {
 
         MedicalRecord medicalRecord = getMedicalRecordForUpdateOrThrow(id);
+
+        if (prescriptionRepository.existsByMedicalRecord_Id(id)) {
+            throw new BusinessException(
+                    "Cannot delete medical record with id: " + id
+                            + " because it has an associated prescription. "
+                            + "Delete the prescription first.");
+        }
 
         repository.delete(medicalRecord);
     }
