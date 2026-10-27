@@ -4,9 +4,9 @@ A Java 21 and Spring Boot backend project.
 
 ## Current Phase: Foundation
 
-- REST health endpoint: GET /api/v1/health
+- REST health endpoint: `GET /api/v1/health`
 - PostgreSQL database connectivity configuration
-- Flyway database migration for the hms schema
+- Flyway database migration for the `hms` schema
 - Automated health-controller test
 
 ## Technology Stack
@@ -20,14 +20,34 @@ A Java 21 and Spring Boot backend project.
 
 ## Run Tests
 
+Run the following command from the project root directory using Windows PowerShell:
+
 ```powershell
 .\mvnw.cmd clean verify
 ```
 
 ## Database Configuration
 
-The application expects a PostgreSQL database named hospital_management_db on localhost:5432.
-Configure the DB_PASSWORD environment variable before starting the application. Never commit passwords or secrets.
+The application expects a PostgreSQL database named `hospital_management_db` on `localhost:5432`.
+
+Configure these environment variables before starting the application:
+
+- `HMS_APP_PASSWORD`: password for the application runtime database account (`hms_app`).
+- `HMS_MIGRATOR_PASSWORD`: password for the Flyway migration database account (`hms_migrator`).
+
+The application uses `hms_app` for runtime database access and `hms_migrator` for database migrations. Keep these accounts and their passwords separate.
+
+Never commit passwords or other secrets to Git.
+
+## Health Endpoint
+
+When the application is running, check its health using:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/api/v1/health
+```
+
+The endpoint should return a response containing the application status and name.
 
 ## Planned Features
 
