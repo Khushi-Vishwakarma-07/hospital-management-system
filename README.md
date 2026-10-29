@@ -1,54 +1,119 @@
 # Hospital Management System
 
-A Java 21 and Spring Boot backend project.
+A resume-focused Java backend project built with Java 21, Spring Boot 4.1.1, PostgreSQL, and Maven.
 
-## Current Phase: Foundation
+The project is organized as a **multi-module Maven repository** with separate applications for authentication and clinical API access.
 
-- REST health endpoint: `GET /api/v1/health`
-- PostgreSQL database connectivity configuration
-- Flyway database migration for the `hms` schema
-- Automated health-controller test
+## Project Architecture
+
+```text
+hospital-management-system/
+|-- pom.xml
+|-- resource-server/
+|   |-- pom.xml
+|   |-- src/
+|       |-- main/
+|       |-- test/
+|-- authorization-server/
+    |-- pom.xml
+```
+
+### Resource Server
+
+The `resource-server` module contains the existing Hospital Management System application.
+
+Current responsibilities:
+- REST API health endpoint: `GET /api/v1/health`
+- PostgreSQL connection configuration
+- Flyway database migration configuration
+- Automated application and controller tests
+
+Planned responsibilities:
+- JWT validation and security configuration
+- Role-based and method-level authorization
+- Clinical APIs for departments, doctors, patients, appointments, medical records, prescriptions, and billing
+
+### Authorization Server
+
+The `authorization-server` module is a separate application boundary for the planned authentication and token-issuing functionality.
+
+Planned responsibilities:
+- OAuth 2.0 and OpenID Connect (OIDC)
+- User identity and login
+- Access-token issuance
+- RSA-based signing keys and public-key discovery through JWKS
+- Signing-key rotation
+- OAuth 2.0 client configuration
+
+**Status:** The module structure exists, but authentication and token-issuing functionality have not been implemented yet.
 
 ## Technology Stack
 
 - Java 21
 - Spring Boot 4.1.1
 - Maven Wrapper
-- PostgreSQL
+- PostgreSQL 18
 - Flyway
 - JUnit and Spring MVC testing
 
+Additional technologies will be introduced as their implementation phases begin.
+
+## Current Project Status
+
+**Completed foundation:**
+- Multi-module Maven structure
+- Existing application moved into `resource-server`
+- Separate `authorization-server` module created
+- PostgreSQL connection configuration using dedicated database accounts
+- Initial Flyway migration for the `hms` schema
+- Health endpoint and automated tests
+- Successful Maven verification after restructuring
+
+**Not yet implemented:**
+- OAuth 2.0/OIDC authentication
+- JWT validation and issuance
+- RSA/JWKS key management and rotation
+- Clinical database tables and business APIs
+- Role-based access control
+- Docker and CI/CD
+
 ## Run Tests
 
-Run the following command from the project root directory using Windows PowerShell:
+From the project root, run the full Maven reactor build:
 
 ```powershell
 .\mvnw.cmd clean verify
 ```
 
+This verifies the modules and runs the tests configured in the project.
+
 ## Database Configuration
 
 The application expects a PostgreSQL database named `hospital_management_db` on `localhost:5432`.
 
-Configure these environment variables before starting the application:
+Configure these environment variables before running the application:
 
-- `HMS_APP_PASSWORD`: password for the application runtime database account (`hms_app`).
-- `HMS_MIGRATOR_PASSWORD`: password for the Flyway migration database account (`hms_migrator`).
+- `HMS_APP_PASSWORD`: password for the `hms_app` runtime database account.
+- `HMS_MIGRATOR_PASSWORD`: password for the `hms_migrator` Flyway migration account.
 
-The application uses `hms_app` for runtime database access and `hms_migrator` for database migrations. Keep these accounts and their passwords separate.
+The application uses separate accounts for runtime database access and migrations. Keep their credentials separate and never commit passwords or other secrets to Git.
 
-Never commit passwords or other secrets to Git.
+The initial migration creates the `hms` schema. Clinical tables and related migrations will be introduced in future phases.
 
 ## Health Endpoint
 
-When the application is running, check its health using:
+After starting the resource-server application, send a request:
 
 ```powershell
 Invoke-RestMethod http://localhost:8080/api/v1/health
 ```
 
-The endpoint should return a response containing the application status and name.
+The endpoint should return the application status and application name.
 
-## Planned Features
+## Development Principles
 
-Authentication, authorization, patient management, doctor management, and appointment management are planned for future phases and are not yet claimed as implemented.
+- Keep authentication and clinical API responsibilities separated.
+- Preserve least-privilege database access.
+- Use version-controlled Flyway migrations for schema changes.
+- Add automated tests as features are implemented.
+- Document features as implemented only after they have been built and verified.
